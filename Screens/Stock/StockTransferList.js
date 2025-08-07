@@ -37,7 +37,7 @@ const StockList = (props) => {
   const Refresh = () => {
     postRequest(
       "transactions/stockTransfer/browse_app",
-      { search: search == undefined ? "" : search },
+      { search: "" },
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
@@ -69,12 +69,17 @@ const StockList = (props) => {
       }
     );
   };
+  const filteredData = griddata.filter((item) => {
+    return item.to_branch.toLowerCase().includes(search.toLowerCase()) ||
+      item.entry_date.toLowerCase().includes(search.toLowerCase()) ||
+      item.status.toLowerCase().includes(search.toLowerCase());
+  });
 
   return (
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
       <FlatList
-        data={griddata}
+        data={filteredData}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={Refresh} />
         }

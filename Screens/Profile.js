@@ -275,8 +275,7 @@ const Profile = (props) => {
               search: ""
             })
           }>
-          Redeem
-        </Button>
+Redeem        </Button>
       </View>
 
 
@@ -1815,6 +1814,7 @@ const CustomerVoucherList = (props) => {
 
   return (
     <View style={MyStyles.container}>
+      {console.log("customer points", props)}
       <Tab.Navigator
         screenOptions={{
           tabBarStyle: { backgroundColor: "#ffba3c" },
@@ -1829,7 +1829,7 @@ const CustomerVoucherList = (props) => {
         <Tab.Screen
           name="Category"
           children={() => <CustomerPoints {...props} />}
-          options={{ title: "Points" }}
+          options={{ title: `Points` }}
           initialParams={props.route.params}
         />
 
@@ -2685,10 +2685,53 @@ const CustomerRedeem = (props) => {
     });
     setLoading(false);
   };
+  const Refresh = async () => {
+    try {
+      setLoading(true);
+      // Wait for all API calls to complete
+      await Promise.all([
+       Browse(),
+      ]);
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      // Optionally show an error message to the user
+    } finally {
+      // Always set loading to false when all operations are done or if there's an error
+      setLoading(false);
+    }
+  };
 
+
+  React.useEffect(() => {
+    Refresh();
+  }, [customer_id]);
+
+ const handleScroll = () => {
+    // Hide the banner when scrolling
+    setBannerVisible(false);
+
+    // Clear any existing timeout
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+
+    // Show banner after 300ms of no scroll
+    scrollTimeout.current = setTimeout(() => {
+      setBannerVisible(true);
+    }, 100);
+  };
 
   return (
     <View style={MyStyles.container}>
+      <ScrollView
+              onScroll={handleScroll} scrollEventThrottle={16}
+              refreshControl={
+                <RefreshControl
+                  refreshing={loading}
+                  onRefresh={Refresh}
+                />
+              }
+            >
       <FlatList
         style={{ marginVertical: 10 }}
         data={griddata}
@@ -2789,7 +2832,7 @@ const CustomerRedeem = (props) => {
         keyExtractor={(item, index) => index.toString()}
       />
 
-
+</ScrollView>
     </View>
   );
 }
@@ -2810,13 +2853,25 @@ const CustomerPoints = (props) => {
     ]);
   }, [activeGriddata, reddemedGriddata, expiredGriddata]);
 
-
+  const Refresh = async () => {
+    try {
+      setLoading(true);
+      // Wait for all API calls to complete
+      await Promise.all([
+       BrowseActive(),
+       BrowseRedeemed(),
+       BrowseExpired(),
+      ]);
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      // Optionally show an error message to the user
+    } finally {
+      // Always set loading to false when all operations are done or if there's an error
+      setLoading(false);
+    }
+  };
   React.useEffect(() => {
-
-    BrowseActive();
-    BrowseRedeemed();
-    BrowseExpired();
-
+    Refresh();
   }, [customer_id]);
 
   const BrowseActive = () => {
@@ -2824,7 +2879,7 @@ const CustomerPoints = (props) => {
       customer_id: customer_id,
     };
     postRequest(
-      "customervisit/getCustomerPointList",
+      "customervisit/getCustomerPointStatusMob",
       temparam,
       userToken
     ).then((resp) => {
@@ -2882,9 +2937,33 @@ const CustomerPoints = (props) => {
     });
     setLoading(false);
   };
+  const handleScroll = () => {
+    // Hide the banner when scrolling
+    setBannerVisible(false);
+
+    // Clear any existing timeout
+    if (scrollTimeout.current) {
+      clearTimeout(scrollTimeout.current);
+    }
+
+    // Show banner after 300ms of no scroll
+    scrollTimeout.current = setTimeout(() => {
+      setBannerVisible(true);
+    }, 100);
+  };
 
   return (
+
     <View style={MyStyles.container}>
+      <ScrollView
+              onScroll={handleScroll} scrollEventThrottle={16}
+              refreshControl={
+                <RefreshControl
+                  refreshing={loading}
+                  onRefresh={Refresh}
+                />
+              }
+            >
       <FlatList
         style={{ marginVertical: 10 }}
         data={griddata}
@@ -2901,18 +2980,18 @@ const CustomerPoints = (props) => {
             }}
           >
 
-            {item.disable == false && item.voucher_expire == "false" ?
+            {item.expire_flag == true ?
               <BadgeRibbon
-                text="Disable"
-                color="gray"
+                text="Expire"
+                color="red"
                 position="voucherRight"
                 textStyle={{ top: 20, left: -20 }}
               />
               :
-              (item.disable == false && item.voucher_expire == "false" ?
+              (item.type == "redeem" ?
                 <BadgeRibbon
-                  text="Expire"
-                  color="red"
+                  text="Redeem"
+                  color="blue"
                   position="voucherRight"
                   textStyle={{ top: 20, left: -20 }}
                 />
@@ -3026,6 +3105,7 @@ const CustomerPoints = (props) => {
           props.navigation.navigate("ExtraPoints", { customer_id })
         }
       />
+      </ScrollView>
     </View>
   )
 }
@@ -3033,12 +3113,16 @@ const CustomerPoints = (props) => {
 const PointForm = (props) => {
   const { customer_id, userToken } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
-
+  const { userName } = props.route.params;
+  const { missCallUser } = props.route.params;
   const [param, setparam] = useState({
     customer_id,
     redeemPoint: "",
     remark: "",
     staff_id: "",
+    full_name: userName,
+    mobile: missCallUser,
+    staff_name: "", 
   });
 
 
@@ -3074,7 +3158,15 @@ const PointForm = (props) => {
             ext_val="staff_id"
             ext_lbl="name"
             value={param.staff_id}
-            onChange={(val) => setparam({ ...param, staff_id: val })}
+            required
+            onChange={(val) => {
+              const selectedStaff = stafflist.find((item) => item.staff_id === val);
+              setparam({
+                ...param,
+                staff_id: val,
+                staff_name: selectedStaff?.name || ''
+              });
+            }}
             placeholder="Staff"
             style={{ marginBottom: 5 }}
           />
@@ -3084,6 +3176,7 @@ const PointForm = (props) => {
           <TextInput
             mode="outlined"
             label="Points"
+            required
             style={{ marginBottom: 2, backgroundColor: 'transparent' }}
             value={param.redeemPoint}
             onChangeText={(text) => setparam({ ...param, redeemPoint: text })}
@@ -3093,6 +3186,7 @@ const PointForm = (props) => {
             <TextInput
               mode="outlined"
               placeholder="Remarks"
+              required
               style={{ backgroundColor: "rgba(0,0,0,0)" }}
               value={param.remark}
               onChangeText={(text) => {
@@ -3115,7 +3209,7 @@ const PointForm = (props) => {
             onPress={() => {
               // setLoading(true);
 
-              // console.log(param);
+              console.log(param);
 
 
               postRequest(
@@ -3127,7 +3221,16 @@ const PointForm = (props) => {
                   console.log(resp)
                   if (resp.data[0].valid) {
 
-                    // props.navigation.navigate("CustomerVoucherList");
+                    props.navigation.goBack();
+                    setparam({
+                      ...param,
+                      redeemPoint: "",
+                      remark: "",
+                      staff_id: "",
+                      staff_name: "",
+                      full_name: "",
+                      mobile: "",
+                    })
                   }
                   // setLoading(false);
                 }
@@ -3145,14 +3248,19 @@ const PointForm = (props) => {
 const ExtraPoints = (props) => {
   const { customer_id } = props.route.params;
   const { userToken } = props.route.params;
+  const { missCallUser } = props.route.params;
+  const { userName } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
 
   console.log(props)
   const [param, setparam] = useState({
-    customer_id,
+    customer_id:customer_id,
     remark: "",
     extra_point: "",
     staff_id: "",
+    mobile:missCallUser,
+    staff_name: "",
+    full_name: userName,
 
   });
 
@@ -3163,6 +3271,7 @@ const ExtraPoints = (props) => {
     postRequest("masters/staff/browse", param, userToken).then((resp) => {
       if (resp.status == 200) {
         setstafflist(resp.data);
+        console.log(resp.data)
       } else {
         Alert.alert(
           "Error !",
@@ -3188,7 +3297,15 @@ const ExtraPoints = (props) => {
             ext_val="staff_id"
             ext_lbl="name"
             value={param.staff_id}
-            onChange={(val) => setparam({ ...param, staff_id: val })}
+            required
+            onChange={(val) => {
+              const selectedStaff = stafflist.find((item) => item.staff_id === val);
+              setparam({
+                ...param,
+                staff_id: val,
+                staff_name: selectedStaff?.name || ''
+              });
+            }}
             placeholder="Staff"
             style={{ marginBottom: 5 }}
           />
@@ -3198,6 +3315,7 @@ const ExtraPoints = (props) => {
           <TextInput
             mode="outlined"
             label="Extra Points"
+            required
             style={{ marginBottom: 2, backgroundColor: 'transparent' }}
             value={param.extra_point || ""}
             onChangeText={(text) => setparam({ ...param, extra_point: text })}
@@ -3208,6 +3326,7 @@ const ExtraPoints = (props) => {
             <TextInput
               mode="outlined"
               placeholder="Remarks"
+              required
               style={{ backgroundColor: "rgba(0,0,0,0)" }}
               value={param.remark || ""}
               onChangeText={(text) => {
@@ -3236,11 +3355,18 @@ const ExtraPoints = (props) => {
                 param,
                 userToken
               ).then((resp) => {
-                console.log('data', resp)
+                console.log('data', param)
                 if (resp.status == 200) {
                   if (resp.data[0].valid) {
                     console.log('submited data', resp)
                     props.navigation.goBack();
+                    setparam({
+                      ...param,
+                      staff_id: "",
+                      staff_name: "",
+                      extra_point: "",
+                      remark: "",
+                    });
                   }
                   // setLoading(false);
                 }

@@ -39,11 +39,12 @@ const StockAcceptanceList = (props) => {
   const Refresh = () => {
     postRequest(
       "transactions/stockAcceptance/browse_app",
-      { search: search == undefined ? "" : search },
+      { search: "" },
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
         //console.log(resp.data);
+        console.log(resp.data)
         setgriddata(resp.data);
       } else {
         Alert.alert(
@@ -72,11 +73,17 @@ const StockAcceptanceList = (props) => {
     );
   };
 
+  const filteredData = griddata.filter((item) => {
+    return item.from_branch.toLowerCase().includes(search.toLowerCase()) ||
+      item.date.toLowerCase().includes(search.toLowerCase()) ||
+      item.status.toLowerCase().includes(search.toLowerCase());
+  });
+
   return (
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
       <FlatList
-        data={griddata}
+        data={filteredData}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={Refresh} />
         }

@@ -188,23 +188,34 @@ const Home = (props) => {
   }, []);
 
 
-  const Refresh = () => {
-    setLoading(true);
-    AllFigures();
-    SmsFigures();
-    CustomersGraphFigures();
-    CartGraphFigures();
-    ServiceGraphFigures();
-    InterestGraphFigures();
-    VoucherGraphFigures();
-    VideoGraphFigures();
-    MissedGraphFigures();
-    ProductCategorysCountList();
-    NotResponseCustomerGraphFigures();
-    InterestAppointmentCount();
-    FeedbackCount();
-    SmsCount();
-    ServiceDetails();
+  const Refresh = async () => {
+    try {
+      setLoading(true);
+      // Wait for all API calls to complete
+      await Promise.all([
+        AllFigures(),
+        SmsFigures(),
+        CustomersGraphFigures(),
+        CartGraphFigures(),
+        ServiceGraphFigures(),
+        InterestGraphFigures(),
+        VoucherGraphFigures(),
+        VideoGraphFigures(),
+        MissedGraphFigures(),
+        ProductCategorysCountList(),
+        NotResponseCustomerGraphFigures(),
+        InterestAppointmentCount(),
+        FeedbackCount(),
+        SmsCount(),
+        ServiceDetails()
+      ]);
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      // Optionally show an error message to the user
+    } finally {
+      // Always set loading to false when all operations are done or if there's an error
+      setLoading(false);
+    }
   };
 
   const ServiceDetails = async () => {

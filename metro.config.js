@@ -1,6 +1,5 @@
 const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
 const { wrapWithReanimatedMetroConfig } = require("react-native-reanimated/metro-config");
-
 // Get default Metro config
 const defaultConfig = getDefaultConfig(__dirname);
 

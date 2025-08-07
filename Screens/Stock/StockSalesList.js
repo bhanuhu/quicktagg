@@ -31,23 +31,17 @@ const StockSalesList = (props) => {
   const [griddata, setgriddata] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   useEffect(() => {
-    if (search.trim() === '') {
-      Refresh()
-    } else {
-      const filtered = griddata.filter(item =>
-        item.title.toLowerCase().includes(search.toLowerCase())
-      );
-      setgriddata(filtered);
-    }
+    Refresh()
   }, [search]);
 
   const Refresh = () => {
     postRequest(
       "transactions/stockSales/browse_app",
-      { search: search == undefined ? "" : search },
+      { search: "" },
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
+        console.log(resp);
         setgriddata(resp.data);
       } else {
         Alert.alert(
@@ -58,14 +52,18 @@ const StockSalesList = (props) => {
       setLoading(false);
     });
   };
-
+const filteredData = griddata.filter((item) => {
+  return item.title.toLowerCase().includes(search.toLowerCase()) ||
+    item.date.toLowerCase().includes(search.toLowerCase()) ||
+    item.customer_name.toLowerCase().includes(search.toLowerCase());
+});
 
 
   return (
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
       <FlatList
-        data={griddata}
+        data={filteredData}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={Refresh} />
         }

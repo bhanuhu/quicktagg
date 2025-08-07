@@ -58,6 +58,7 @@ const StockTransfer = (props) => {
         BranchList();
         if (tran_id == 0) {
           param.entry_no = resp.data[0].entry_no;
+          console.log("param",param)
           setparam({ ...param });
         }
         else {

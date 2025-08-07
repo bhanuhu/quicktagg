@@ -452,7 +452,7 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Stock Acceptance List" disableSearch />
+            <TitleBar {...props} title="Stock Acceptance List"  />
           ),
         }}
       />
@@ -588,7 +588,7 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Points" />
+            <TitleBar {...props} title={`Points`} />
           ),
         }}
       />

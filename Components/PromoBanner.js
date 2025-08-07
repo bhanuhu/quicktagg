@@ -14,13 +14,13 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     // if (!visible) return <></>;
     const [isDrawerVisible, setDrawerVisible] = useState(false);
     const [param, setParam] = useState({
-        customerName: "",
-        imagePath: "",
-        branchName: "",
-        message1: "",
-        message2: "",
+        file: "",
+        message: "",
+        extra_text: "",
         selectedCustomer: [],
-        contactOn: "",
+        contact_us: "",
+        mobiles: [],
+        bb_id: "",
     });
 
     const [newContact, setNewContact] = useState("");
@@ -238,8 +238,8 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     // Toggle all
     const toggleSelectAll = () => {
         const currentCustomerIds = paginatedCustomers.map(c => c.customer_id);
+        console.log(`currentCustomerIds -> ${JSON.stringify(paginatedCustomers)}`)
         const allSelected = currentCustomerIds.every(id => selectedCustomers.includes(id));
-
         if (allSelected) {
             // Deselect only current page
             setSelectedCustomers(prev =>
@@ -435,14 +435,13 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     onPress={() => {
                                                         const selectedNames = filteredCustomers
                                                             .filter(c => selectedCustomers.includes(c.customer_id))
-                                                            .map(c => c.full_name)
+                                                            .map(c => c.mobile)
                                                             .join(', ');
 
                                                         setParam(prev => ({
                                                             ...prev,
-                                                            selectedCustomer: selectedCustomers,
-                                                            customerName: selectedNames || 'Customer',
-                                                            branchName: branchId
+                                                            mobiles: selectedNames,
+                                                            bb_id: branchId
                                                         }));
                                                         setModalVisible(false);
                                                     }}
@@ -464,11 +463,11 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     style={styles.textArea}
                                     placeholder="Type here..."
                                     multiline
-                                    value={param.message1}
+                                    value={param.message}
                                     onChangeText={(text) => setParam(prev => ({ ...prev, message1: text }))}
                                     maxLength={200}
                                 />
-                                <Text style={styles.counter}>{param.message1.length}/200</Text>
+                                <Text style={styles.counter}>{param.message.length}/200</Text>
 
                                 {/* Contact On */}
                                 <View style={{ flexDirection: 'row' }}>
@@ -476,7 +475,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <TextInput
                                         style={{ borderBottomColor: '#333', width: 100, height: 35 }}
                                         placeholder="Type here..."
-                                        value={param.contactOn}
+                                        value={param.contact_us}
                                         onChangeText={(text) => setParam(prev => ({ ...prev, contactOn: text }))}
                                         maxLength={200}
                                     />
@@ -488,11 +487,11 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     style={styles.textArea}
                                     placeholder="Type here..."
                                     multiline
-                                    value={param.message2}
-                                    onChangeText={(text) => setParam(prev => ({ ...prev, message2: text }))}
+                                    value={param.extra_text}
+                                    onChangeText={(text) => setParam(prev => ({ ...prev, extra_text: text }))}
                                     maxLength={200}
                                 />
-                                <Text style={styles.counter}>{param.message2.length}/200</Text>
+                                <Text style={styles.counter}>{param.extra_text.length}/200</Text>
 
                                 {/* Image Upload and Submit */}
                                 <View style={{
@@ -505,13 +504,13 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                         source={image}
                                         onClearImage={() => {
                                             setImage({ uri: "" });
-                                            setParam(prev => ({ ...prev, imagePath: "" }));
+                                            setParam(prev => ({ ...prev, file: "" }));
                                         }}
                                         onUploadImage={(result) => {
                                             setImage({ uri: result.uri });
                                             setParam(prev => ({
                                                 ...prev,
-                                                imagePath: "image-" + moment().format("YYYYMMDD-hhmmss") + ".jpg"
+                                                file: "image-" + moment().format("YYYYMMDD-hhmmss") + ".jpg"
                                             }));
                                         }}
                                     />
