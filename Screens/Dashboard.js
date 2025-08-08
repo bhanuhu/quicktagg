@@ -56,8 +56,8 @@ const Dashboard = (props) => {
           branchType == "Jeweller"
             ? { name: "Trial", Component: TrialList, icon: "transit-transfer", label: "Trial", Header: TitleBar }
             : { name: "Service", Component: Service, icon: "cog-outline", label: "Service", Header: TitleBar },
-          { name: "Stock", Component: Stock, icon: "truck-delivery", label: "Stock", Header: CustomHeader },
-          { name: "Calls", Component: Calls, icon: "phone", label: "Calls", Header: CustomHeader }
+          { name: "Stock", Component: Stock, icon: "truck-delivery", label: "Stock", Header: TitleBar },
+          { name: "Calls", Component: Calls, icon: "phone", label: "Calls", Header: TitleBar }
         ].map(({ name, Component, icon, label, Header }) => (
           <Tab.Screen
             key={name}

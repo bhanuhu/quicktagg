@@ -19,7 +19,7 @@ const ProductServiceScreen = ({ route, navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  const { branchId, userToken } = route.params;
+  const { branchId, userToken ,search} = route.params;
 
   const fetchData = async () => {
     setRefreshing(true);
@@ -45,12 +45,12 @@ const ProductServiceScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (!searchText) {
+    if (!searchText ) {
       setProductList(originalList);
       return;
     }
 
-    const lowerSearch = searchText.toLowerCase();
+    const lowerSearch = searchText.toLowerCase() ;
     const filtered = originalList.filter(item =>
       item.customer_name?.toLowerCase().includes(lowerSearch) ||
       item.mobile?.includes(lowerSearch) ||
@@ -62,6 +62,45 @@ const ProductServiceScreen = ({ route, navigation }) => {
 
     setProductList(filtered);
   }, [searchText]);
+
+    const filteredData = React.useMemo(() => {
+            
+            if (!search || !productList?.length) {
+              return productList || [];
+            }
+            
+            const searchTerm = search.toLowerCase().trim();
+            
+            const result = productList.filter((item) => {
+              if (!item) return false;
+              
+              // Check each field for the search term
+              const fieldsToSearch = [
+                { name: 'customer_name', value: item.customer_name },
+                { name: 'mobile', value: item.mobile},
+                { name: 'vichle_number', value: item.vichle_number},
+                { name: 'staff_name', value: item.staff_name},
+                { name: 'product_category', value: item.product_category},
+                { name: 'subcategory_name', value: item.subcategory_name},
+                
+              ];
+              
+              const hasMatch = fieldsToSearch.some(({ name, value }) => {
+                if (!value) return false;
+                const strValue = String(value).toLowerCase();
+                const match = strValue.includes(searchTerm);
+                if (match) {
+                  console.log(`Match found in ${name}:`, value);
+                }
+                return match;
+              });
+              
+              return hasMatch;
+            });
+            
+            return result;
+          }, [productList, search]);
+
 
   return (
     <ScrollView
@@ -103,12 +142,12 @@ const ProductServiceScreen = ({ route, navigation }) => {
         />
       </View>
 
-      {productList.length === 0 ? (
+      {filteredData.length === 0 ? (
         <Text style={{ textAlign: 'center', marginTop: 20 }}>
           No records found.
         </Text>
       ) : (
-        productList.map((item, index) => (
+        filteredData.map((item, index) => (
           <View
             key={index}
             style={{

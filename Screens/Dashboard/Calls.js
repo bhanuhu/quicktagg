@@ -11,7 +11,7 @@ import Loading from "../../Components/Loading";
 import { CapitalizeName } from "../../utils/CapitalizeName";
 
 const Calls = (props) => {
-  const { userToken, branchId } = props.route.params;
+  const { userToken, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(false);
   const [griddata, setgriddata] = useState([]);
   const [param, setparam] = useState({
@@ -32,7 +32,7 @@ const Calls = (props) => {
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
-        //console.log(resp.data);   
+        console.log("fetchCallList---------------------->",resp.data);   
         setgriddata(resp.data);
       } else {
         Alert.alert(
@@ -43,6 +43,44 @@ const Calls = (props) => {
       setLoading(false);
     });
   };
+
+  const filteredData = React.useMemo(() => {
+          
+          if (!search || !griddata?.length) {
+            return griddata || [];
+          }
+          
+          const searchTerm = search.toLowerCase().trim();
+          
+          const result = griddata.filter((item) => {
+            if (!item) return false;
+            
+            // Check each field for the search term
+            const fieldsToSearch = [
+              { name: 'customer_name', value: item.customer_name },
+              { name: 'mobile', value: item.mobile},
+              { name: 'customer_category', value: item.customer_category},
+              { name: 'type', value: item.type},
+              { name: 'platform', value: item.platform},
+              { name: 'status', value: item.status},
+              
+            ];
+            
+            const hasMatch = fieldsToSearch.some(({ name, value }) => {
+              if (!value) return false;
+              const strValue = String(value).toLowerCase();
+              const match = strValue.includes(searchTerm);
+              if (match) {
+                console.log(`Match found in ${name}:`, value);
+              }
+              return match;
+            });
+            
+            return hasMatch;
+          });
+          
+          return result;
+        }, [griddata, search]);
 
   return (
     <View style={MyStyles.container}>
@@ -117,7 +155,7 @@ const Calls = (props) => {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={griddata}
+        data={filteredData}
         initialNumToRender={10}
         refreshing={loading}
         onRefresh={fetchCallList}

@@ -34,7 +34,8 @@ const Appointment = (props) => {
     });
     const [dateModal, setDateModal] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
-    const [zoomedImageUri, setZoomedImageUri] = useState(null);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [isZoomed, setIsZoomed] = useState(false);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -222,7 +223,10 @@ const Appointment = (props) => {
 
                                 {/* Pressable Image with Zoom */}
                                 {item.image_path && item.url_image && (
-                                    <Pressable onPress={() => setZoomedImageUri(`${item.url_image}${item.image_path}`)}>
+                                    <Pressable onPress={() => {
+                                        setSelectedImage(`${item.url_image}${item.image_path}`);
+                                        setIsZoomed(true);
+                                    }}>
                                         <Image
                                             source={{ uri: `${item.url_image}${item.image_path}` }}
                                             style={{
@@ -311,27 +315,40 @@ const Appointment = (props) => {
                     ))
                 )}
             </ScrollView>
-            <Modal visible={!!zoomedImageUri} transparent onDismiss={() => setZoomedImageUri(null)}>
-                <Pressable
+            {/* Zoomable Image */}
+            {selectedImage && (
+                <Pressable 
+                    onPress={() => {
+                        if (!isZoomed) {
+                            setIsZoomed(true);
+                        } else {
+                            setSelectedImage(null);
+                            setIsZoomed(false);
+                        }
+                    }}
                     style={{
-                        flex: 1,
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         backgroundColor: 'rgba(0,0,0,0.9)',
                         justifyContent: 'center',
                         alignItems: 'center',
+                        zIndex: 1000
                     }}
-                    onPress={() => setZoomedImageUri(null)}
                 >
-                    <Image
-                        source={{ uri: zoomedImageUri }}
+                    <Image 
+                        source={{ uri: selectedImage }} 
                         style={{
-                            width: '90%',
-                            height: '70%',
-                            borderRadius: 10,
+                            width: '60%',
+                            height: '60%',
+                            resizeMode: 'contain',
+                            transform: [{ scale: isZoomed ? 1.5 : 1 }]
                         }}
-                        resizeMode="contain"
                     />
                 </Pressable>
-            </Modal>
+            )}
 
         </View>
     );

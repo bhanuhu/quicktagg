@@ -8,7 +8,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 
 const CustomHeader = (props) => {
-  const { userToken, branchId } = props.route.params;
+  const { userToken, branchId, search } = props.route.params;
   const [param, setparam] = useState({
     from_date: moment().subtract(7, 'days').format('YYYY-MM-DD'),
     to_date: moment().format('YYYY-MM-DD'),

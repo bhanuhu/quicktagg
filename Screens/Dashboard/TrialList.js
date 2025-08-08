@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, FlatList, ScrollView, Image, Pressable, RefreshControl } from 'react-native';
+import { View, Alert, FlatList, ScrollView, Image, Pressable, RefreshControl, TouchableWithoutFeedback } from 'react-native';
 import { List, Text, TouchableRipple, Portal, Modal, IconButton } from 'react-native-paper';
 import MyStyles from '../../Styles/MyStyles';
 import { postRequest } from '../../Services/RequestServices';
@@ -22,6 +22,7 @@ const Wishlist = (props) => {
   });
   const [dateModal, setDateModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState(null); // This holds the selected value
@@ -86,7 +87,7 @@ const Wishlist = (props) => {
   React.useEffect(() => {
     fetchWishlist();
 
-  }, [search]);
+  }, []);
 
   useEffect(() => {
     setProductCategory(null);
@@ -101,7 +102,7 @@ const Wishlist = (props) => {
       { branch_id: branchId, from_date: param.from_date, to_date: param.to_date, search: "" },
       userToken
     ).then((resp) => {
-
+      console.log(`Response data --------------------------> ${JSON.stringify(resp)}`)
       if (resp.status == 200) {
 
         const filteredData = resp.data.filter(
@@ -141,7 +142,52 @@ const Wishlist = (props) => {
     }
   };
 
-
+    const filteredData = React.useMemo(() => {
+      console.log('Search term:', search);
+      console.log('Grid data length:', griddata?.length);
+      
+      if (!search || !griddata?.length) {
+        console.log('No search term or empty grid data, returning all items');
+        return griddata || [];
+      }
+      
+      const searchTerm = search.toLowerCase().trim();
+      console.log('Searching for:', searchTerm);
+      
+      const result = griddata.filter((item) => {
+        if (!item) return false;
+        
+        // Check each field for the search term
+        const fieldsToSearch = [
+          { name: 'customer_name', value: item?.customer_name },
+          { name: 'mobile', value: item?.mobile },
+          { name: 'product_name', value: item?.product_name },
+          { name: 'subcategory_name', value: item?.subcategory_name },
+          { name: 'staff_name', value: item?.staff_name },
+          { name: 'interest', value: item?.interest },
+          { name: 'status', value: item?.status },
+          { name: 'type', value: item?.type_interest || item?.type },
+          { name: 'updated_interest', value: item?.updated_interest },
+          { name: 'customer_category', value: item?.customer_category },
+          { name: 'remarks', value: item?.remarks }
+        ];
+        
+        const hasMatch = fieldsToSearch.some(({ name, value }) => {
+          if (!value) return false;
+          const strValue = String(value).toLowerCase();
+          const match = strValue.includes(searchTerm);
+          if (match) {
+            console.log(`Match found in ${name}:`, value);
+          }
+          return match;
+        });
+        
+        return hasMatch;
+      });
+      
+      console.log('Filtered results count:', result.length);
+      return result;
+    }, [griddata, search]);
 
 
   return (
@@ -250,7 +296,7 @@ const Wishlist = (props) => {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }>
-        {griddata.map((item, index) => (
+        {filteredData.map((item, index) => (
           <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ margin: 6, flexDirection: 'row' }}>
@@ -288,7 +334,15 @@ const Wishlist = (props) => {
               </View>
 
 
-              <Image source={{ uri: `${item.url_image}${item.image_path}` }} style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }} />
+              <Pressable onPress={() => {
+                setSelectedImage(`${item.url_image}${item.image_path}`);
+                setIsZoomed(true);
+              }}>
+                <Image 
+                  source={{ uri: `${item.url_image}${item.image_path}` }} 
+                  style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }} 
+                />
+              </Pressable>
 
 
               <View style={{ marginRight: 5, position: 'relative', height: '100%' }}>
@@ -366,6 +420,41 @@ const Wishlist = (props) => {
           </View>
         ))}
       </ScrollView>
+
+      {/* Zoomable Image */}
+      {selectedImage && (
+        <Pressable 
+          onPress={() => {
+            if (!isZoomed) {
+              setIsZoomed(true);
+            } else {
+              setSelectedImage(null);
+              setIsZoomed(false);
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+        >
+          <Image 
+            source={{ uri: selectedImage }} 
+            style={{
+              width: '60%',
+              height: '60%',
+              resizeMode: 'contain',
+              transform: [{ scale: isZoomed ? 1.5 : 1 }]
+            }}
+          />
+        </Pressable>
+      )}
     </View>
   );
 };

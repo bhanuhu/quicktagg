@@ -7,12 +7,13 @@ import {
   Pressable,
   RefreshControl,
 } from 'react-native';
+import { Modal } from 'react-native';
 import {
   Text,
   TouchableRipple,
   Portal,
-  Modal,
   IconButton,
+  TouchableWithoutFeedback,
 } from 'react-native-paper';
 import MyStyles from '../../Styles/MyStyles';
 import { postRequest } from '../../Services/RequestServices';
@@ -22,9 +23,10 @@ import MedalIcon from 'react-native-vector-icons/Ionicons';
 import moment from 'moment';
 import Loading from '../../Components/Loading';
 import { CapitalizeName } from '../../utils/CapitalizeName';
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 const Notifications = (props) => {
-  const { userToken, branchId } = props.route.params;
+  const { userToken, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(false);
   const [griddata, setgriddata] = useState([]);
   const [serviceData, setServiceData] = useState([]);
@@ -34,11 +36,13 @@ const Notifications = (props) => {
   });
   const [dateModal, setDateModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
- const seeDetails = () => {
-        setIsOpen(!isOpen)
-    }
-
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+  
+  const toggleDropdown = (id) => {
+    setOpenDropdownId(openDropdownId === id ? null : id);
+  };
 
   const getInterestColor = (item) => {
     switch (item.status) {
@@ -53,6 +57,87 @@ const Notifications = (props) => {
     }
   };
 
+  const filteredData = React.useMemo(() => {
+    console.log('Search term:', search);
+    console.log('Grid data length:', griddata?.length);
+
+    if (!search || !griddata?.length) {
+      console.log('No search term or empty grid data, returning all items');
+      return griddata || [];
+    }
+
+    const searchTerm = search.toLowerCase().trim();
+    console.log('Searching for:', searchTerm);
+
+    const result = griddata.filter((item) => {
+      if (!item) return false;
+
+      // Check each field for the search term
+      const fieldsToSearch = [
+        { name: 'full_name', value: item.full_name },
+        { name: 'mobile', value: item.mobile },
+        { name: 'category', value: item.category },
+        { name: 'category_name', value: item.category_name },
+
+      ];
+
+      const hasMatch = fieldsToSearch.some(({ name, value }) => {
+        if (!value) return false;
+        const strValue = String(value).toLowerCase();
+        const match = strValue.includes(searchTerm);
+        if (match) {
+          console.log(`Match found in ${name}:`, value);
+        }
+        return match;
+      });
+
+      return hasMatch;
+    });
+
+    console.log('Filtered results count:', result.length);
+    return result;
+  }, [griddata, search]);
+
+   const filteredServiceData = React.useMemo(() => {
+          
+          if (!search || !serviceData?.length) {
+            return serviceData || [];
+          }
+          
+          const searchTerm = search.toLowerCase().trim();
+          
+          const result = serviceData.filter((item) => {
+            if (!item) return false;
+            
+            // Check each field for the search term
+            const fieldsToSearch = [
+              { name: 'customer_name', value: item.full_name },
+              { name: 'mobile', value: item.mobile },
+              { name: 'product_name', value: item.category },
+              { name: 'subcategory_name', value: item.sub_category },
+              { name: 'staff_name', value: item.staff },
+              { name: 'status', value: item.status },
+              { name: 'vehicle_number', value: item.vihcle_number },
+              { name: 'last_service_date', value: moment(item.last_service_date).format('YYYY-MM-DD') },
+              { name: 'next_service', value: moment(item.next_service).format('YYYY-MM-DD') },
+            ];
+            
+            const hasMatch = fieldsToSearch.some(({ name, value }) => {
+              if (!value) return false;
+              const strValue = String(value).toLowerCase();
+              const match = strValue.includes(searchTerm);
+              if (match) {
+                console.log(`Match found in ${name}:`, value);
+              }
+              return match;
+            });
+            
+            return hasMatch;
+          });
+          
+          return result;
+        }, [serviceData, search]);
+        
   const fetchNotifications = () => {
     setLoading(true);
     Promise.all([
@@ -68,6 +153,7 @@ const Notifications = (props) => {
       ),
     ])
       .then(([notifResp, serviceResp]) => {
+        console.log('Notification response:', notifResp);
         if (notifResp.status === 200) {
           setgriddata(notifResp.data);
         } else {
@@ -75,6 +161,7 @@ const Notifications = (props) => {
         }
 
         if (serviceResp.status === 200) {
+          console.log(`service response --------> ${JSON.stringify(serviceResp.data)}`)
           const today = moment().format('YYYY-MM-DD');
           const filtered = serviceResp.data.filter(
             (item) =>
@@ -111,74 +198,15 @@ const Notifications = (props) => {
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
 
-      <Portal>
-        <Modal
-          visible={dateModal}
-          contentContainerStyle={{
-            backgroundColor: '#FFF',
-            marginHorizontal: 20,
-            paddingHorizontal: 10,
-            borderRadius: 5,
-          }}
-          onDismiss={() => setDateModal(false)}
-        >
-          <View style={MyStyles.datePickerModal}>
-            <Text>Select Duration</Text>
-            <View style={MyStyles.datePickerRow}>
-              <DatePicker
-                mode="text"
-                value={param.from_date}
-                onValueChange={(date) => {
-                  param.from_date = date;
-                  setparam({ ...param });
-                  fetchNotifications();
-                }}
-              />
-              <Text style={MyStyles.dateLabel}>To</Text>
-              <DatePicker
-                mode="text"
-                value={param.to_date}
-                onValueChange={(date) => {
-                  param.to_date = date;
-                  setparam({ ...param });
-                  fetchNotifications();
-                }}
-              />
-            </View>
-          </View>
-        </Modal>
-      </Portal>
+      
 
-      <View style={MyStyles.row}>
-        <TouchableRipple onPress={() => setDateModal(true)}>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <IconButton icon="calendar" />
-            <Text style={{ fontWeight: 'bold' }}>
-              {moment(param.from_date).format('DD/MM/YYYY')} -{' '}
-              {moment(param.to_date).format('DD/MM/YYYY')}
-            </Text>
-          </View>
-        </TouchableRipple>
-        <Pressable
-          style={{
-            flexDirection: 'row',
-            paddingHorizontal: 20,
-            borderRadius: 10,
-            backgroundColor: 'orange',
-            marginRight: 10,
-          }}
-          onPress={() => props.navigation.navigate('RecentActivity')}
-        >
-          <Icon name="circle-medium" color="red" size={20} />
-          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Live</Text>
-        </Pressable>
-      </View>
+     
 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {griddata.map((item, index) => (
+        {filteredData.map((item, index) => (
           <View
             key={`notif-${index}`}
             style={{
@@ -240,19 +268,24 @@ const Notifications = (props) => {
               </View>
 
               {item.image_path ? (
-                <Image
-                  source={{
-                    uri: `${item.url}CustomerUploadedDesign/${item.image_path}`
-                  }}
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: 5,
-                    marginRight: 10,
-                  }}
-                />
+                <TouchableOpacity onPress={() => {
+                  setSelectedImage(`${item.url}CustomerUploadedDesign/${item.image_path}`);
+                  setIsZoomed(true);
+                }}>
+                  <Image
+                    source={{
+                      uri: `${item.url}CustomerUploadedDesign/${item.image_path}`
+                    }}
+                    style={{
+                      width: 50,
+                      height: 50,
+                      borderRadius: 5,
+                      marginRight: 10,
+                    }}
+                  />
+                </TouchableOpacity>
               ) : (
-                <UploadIcon
+                <Icon
                   name="upload"
                   size={30}
                   color="green"
@@ -299,7 +332,7 @@ const Notifications = (props) => {
           </View>
         ))}
 
-        {serviceData.map((item, index) => (
+        {filteredServiceData.map((item, index) => (
           <View key={`service-${index}`} style={{ borderBottomWidth: 0.5, borderBottomColor: 'black', padding: 10 }}>
             <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <View style={{ margin: 6, flexDirection: 'row' }}>
@@ -337,7 +370,15 @@ const Notifications = (props) => {
               </View>
 
 
-              <Image source={{ uri: `https://api.quicktagg.com/CustomerUploads/${item.image}` }} style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }} />
+              <Pressable onPress={() => {
+                setSelectedImage(`https://api.quicktagg.com/CustomerUploads/${item.image}`);
+                setIsZoomed(true);
+              }}>
+                <Image 
+                  source={{ uri: `https://api.quicktagg.com/CustomerUploads/${item.image}` }} 
+                  style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }}
+                />
+              </Pressable>
 
 
               <View style={{ marginRight: 5, position: 'relative', height: '100%' }}>
@@ -369,12 +410,14 @@ const Notifications = (props) => {
 
 
                 <View style={{ alignItems: 'center', position: 'relative' }}>
-                  <Pressable style={{ position: 'absolute', bottom: -40, right: 20 }} onPress={seeDetails}>
+                  <Pressable 
+                    style={{ position: 'absolute', bottom: -40, right: 20 }} 
+                    onPress={() => toggleDropdown(item.id || `service-${index}`)}
+                  >
                     <MedalIcon
-                      name="caret-down-outline"
+                      name={openDropdownId === (item.id || `service-${index}`) ? "caret-up-outline" : "caret-down-outline"}
                       size={30}
                       color={getInterestColor(item)}
-
                     />
                   </Pressable>
                 </View>
@@ -427,8 +470,7 @@ const Notifications = (props) => {
               // )
             }
 
-            {
-              isOpen && (
+            {openDropdownId === (item.id || `service-${index}`) && (
                 <View style={{ elevation: 10, borderColor: '#aaa', borderWidth: 1, backgroundColor: '#fff', padding: 10, borderRadius: 5 }}>
                   <View style={{ flexDirection: 'row', gap: 35, flexWrap: 'wrap', justifyContent: 'space-between' }}>
                     <View>
@@ -475,8 +517,62 @@ const Notifications = (props) => {
           </View>
         ))}
       </ScrollView>
+
+      {/* Toggle Zoom Image */}
+      {selectedImage && (
+        <Pressable 
+          onPress={() => {
+            if (!isZoomed) {
+              setIsZoomed(true);
+            } else {
+              setSelectedImage(null);
+              setIsZoomed(false);
+            }
+          }}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.9)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000
+          }}
+        >
+          <Image 
+            source={{ uri: selectedImage }} 
+            style={{
+              width: '60%',
+              height: '60%',
+              resizeMode: 'contain',
+              transform: [{ scale: isZoomed ? 1.5 : 1 }]
+            }}
+          />
+        </Pressable>
+      )}
     </View>
   );
+};
+
+const styles = {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomedImage: {
+    width: '100%',
+    height: '80%',
+  }
 };
 
 export default Notifications;

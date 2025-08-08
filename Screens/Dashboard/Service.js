@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { View, Alert, FlatList, ScrollView, Image, Pressable, RefreshControl } from 'react-native';
 import { List, Text, TouchableRipple, Portal, Modal, IconButton } from 'react-native-paper';
 import MyStyles from '../../Styles/MyStyles';
@@ -24,19 +24,57 @@ const Service = (props) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
-    const [selectedCategory, setSelectedCategory] = useState(null); // This holds the selected value
-
-
     const [productCategory, setProductCategory] = useState(null);
     const [interest, setInterest] = useState(null);
     const [updatedInterest, setUpdatedInterest] = useState(null);
-    const [isOpen, setIsOpen] = useState(false);
-
-
-
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+    const toggleDropdown = useCallback((id) => {
+        setOpenDropdownId(prevId => prevId === id ? null : id);
+    }, []);
 
     const uniqueNames = new Set();
-    const filteredItems = originalGridData.filter(item => {
+
+      const filteredData = React.useMemo(() => {
+        
+        if (!search || !griddata?.length) {
+          return griddata || [];
+        }
+        
+        const searchTerm = search.toLowerCase().trim();
+        
+        const result = griddata.filter((item) => {
+          if (!item) return false;
+          
+          // Check each field for the search term
+          const fieldsToSearch = [
+            { name: 'customer_name', value: item.full_name },
+            { name: 'mobile', value: item.mobile },
+            { name: 'product_name', value: item.category },
+            { name: 'subcategory_name', value: item.sub_category },
+            { name: 'staff_name', value: item.staff },
+            { name: 'status', value: item.status },
+            { name: 'vehicle_number', value: item.vihcle_number },
+            { name: 'last_service_date', value: moment(item.last_service_date).format('YYYY-MM-DD') },
+            { name: 'next_service', value: moment(item.next_service).format('YYYY-MM-DD') },
+          ];
+          
+          const hasMatch = fieldsToSearch.some(({ name, value }) => {
+            if (!value) return false;
+            const strValue = String(value).toLowerCase();
+            const match = strValue.includes(searchTerm);
+            if (match) {
+              console.log(`Match found in ${name}:`, value);
+            }
+            return match;
+          });
+          
+          return hasMatch;
+        });
+        
+        return result;
+      }, [griddata, search]);
+
+    const filteredItems = filteredData.filter(item => {
         const name = item.product_name?.trim();
         if (!name || uniqueNames.has(name)) return false;
         uniqueNames.add(name);
@@ -73,9 +111,6 @@ const Service = (props) => {
         setgriddata(result);
     }, [productCategory, interest]);
 
-
-
-
     const onRefresh = () => {
         setRefreshing(true);
         fetchWishlist();
@@ -94,7 +129,6 @@ const Service = (props) => {
         setInterest(null);
     }, [originalGridData]);
 
-
     const fetchWishlist = () => {
         setLoading(true);
         postRequest(
@@ -102,14 +136,10 @@ const Service = (props) => {
             { branch_id: branchId, from_date: param.from_date, to_date: param.to_date, search: "" },
             userToken
         ).then((resp) => {
-            console.log('service data', resp)
-
+            console.log(`service response --------> ${JSON.stringify(resp.data[0].count_check)}`)
             if (resp.status == 200) {
                 setgriddata(resp.data);
                 setOriginalGridData(resp.data)
-
-
-
 
             } else {
                 Alert.alert("Error !", "Oops! \nSeems like we run into some Server Error");
@@ -132,13 +162,13 @@ const Service = (props) => {
                 return MyStyles.primaryColor.backgroundColor
             case 'Due':
                 return 'blue';
+            case 'OverDue':
+                return 'grey';
             default:
                 return 'red';
+            
         }
     };
-
-
-
 
     return (
         <View style={MyStyles.container}>
@@ -213,7 +243,7 @@ const Service = (props) => {
                     <Text style={{ color: "#FFF", fontWeight: 'bold' }}>Live</Text>
                 </Pressable>
             </View>
-            <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+            {/* <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
 
                 <View style={{ width: '100%' }}>
                     <RNPickerSelect
@@ -235,13 +265,13 @@ const Service = (props) => {
                         }}
                     />
                 </View>
-            </View>
+            </View> */}
 
 
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }>
-                {griddata.map((item, index) => (
+                {filteredData.map((item, index) => (
                     <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ margin: 6, flexDirection: 'row' }}>
@@ -311,9 +341,9 @@ const Service = (props) => {
 
 
                                 <View style={{ alignItems: 'center', position: 'relative' }}>
-                                    <Pressable style={{ position: 'absolute', bottom: -40, right: 20 }} onPress={seeDetails}>
+                                    <Pressable style={{ position: 'absolute', bottom: -40, right: 20 }} onPress={() => toggleDropdown(item.id || index)}>
                                         <MedalIcon
-                                            name="caret-down-outline"
+                                            name={openDropdownId === (item.id || index) ? "caret-up-outline" : "caret-down-outline"}
                                             size={30}
                                             color={getInterestColor(item)}
 
@@ -370,48 +400,8 @@ const Service = (props) => {
                         }
 
                         {
-                            isOpen && (
-                                <View style={{ elevation: 10, borderColor: '#aaa', borderWidth: 1, backgroundColor: '#fff', padding: 10, borderRadius: 5 }}>
-                                    <View style={{ flexDirection: 'row', gap: 35, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Last Service</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{moment(item.last_service_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}</Text>
-                                        </View>
-
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Color</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{item.color}</Text>
-                                        </View>
-
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Kilometer</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{item.kms}</Text>
-                                        </View>
-
-
-
-
-
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Next Service</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{moment(item.next_service, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}</Text>
-                                        </View>
-
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Points</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{item.points}</Text>
-                                        </View>
-
-                                        <View>
-                                            <Text style={{ fontSize: 15 }}>Payment</Text>
-                                            <Text style={{ fontWeight: 'bold' }}>{item.payment}</Text>
-                                        </View>
-
-
-
-
-                                    </View>
-                                </View>
+                            openDropdownId === (item.id || index) && (
+                                <DropdownContent item={item} />
                             )
                         }
 
@@ -425,5 +415,41 @@ const Service = (props) => {
         </View>
     );
 };
+
+const DropdownContent = memo(({ item }) => (
+    <View style={{ elevation: 10, borderColor: '#aaa', borderWidth: 1, backgroundColor: '#fff', padding: 10, borderRadius: 5 }}>
+        <View style={{ flexDirection: 'row', gap: 35, flexWrap: 'wrap', justifyContent: 'space-between' }}>
+            <View>
+                <Text style={{ fontSize: 15 }}>Last Service</Text>
+                <Text style={{ fontWeight: 'bold' }}>{moment(item.last_service_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}</Text>
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 15 }}>Color</Text>
+                <Text style={{ fontWeight: 'bold' }}>{item.color}</Text>
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 15 }}>Kilometer</Text>
+                <Text style={{ fontWeight: 'bold' }}>{item.kms}</Text>
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 15 }}>Next Service</Text>
+                <Text style={{ fontWeight: 'bold' }}>{moment(item.next_service, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}</Text>
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 15 }}>Points</Text>
+                <Text style={{ fontWeight: 'bold' }}>{item.points}</Text>
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 15 }}>Payment</Text>
+                <Text style={{ fontWeight: 'bold' }}>{item.payment}</Text>
+            </View>
+        </View>
+    </View>
+));
 
 export default Service;

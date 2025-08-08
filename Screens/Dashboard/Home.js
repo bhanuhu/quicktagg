@@ -91,7 +91,7 @@ const Home = (props) => {
     postRequest("masters/branch/preview", { branch_id: branchId }, userToken).then((resp) => {
 
       if (resp) {
-        console.log(resp.branch_type)
+        console.log("branch type", resp.branch_type)
         setBranchType(resp.branch_type)
       } else {
         Alert.alert(
@@ -187,33 +187,40 @@ const Home = (props) => {
     Refresh();
   }, []);
 
+  // Helper function to handle API errors consistently
+  const handleApiError = (error) => {
+    console.error('API Error:', error instanceof Error ? error.message : 'Unknown API error');
+    // Don't rethrow to prevent Promise.all from failing on first error
+    return null;
+  };
+
 
   const Refresh = async () => {
     try {
       setLoading(true);
-      // Wait for all API calls to complete
+      // Execute all API calls in parallel and wait for all to complete
       await Promise.all([
-        AllFigures(),
-        SmsFigures(),
-        CustomersGraphFigures(),
-        CartGraphFigures(),
-        ServiceGraphFigures(),
-        InterestGraphFigures(),
-        VoucherGraphFigures(),
-        VideoGraphFigures(),
-        MissedGraphFigures(),
-        ProductCategorysCountList(),
-        NotResponseCustomerGraphFigures(),
-        InterestAppointmentCount(),
-        FeedbackCount(),
-        SmsCount(),
-        ServiceDetails()
+        AllFigures().catch(handleApiError),
+        SmsFigures().catch(handleApiError),
+        CustomersGraphFigures().catch(handleApiError),
+        CartGraphFigures().catch(handleApiError),
+        ServiceGraphFigures().catch(handleApiError),
+        InterestGraphFigures().catch(handleApiError),
+        VoucherGraphFigures().catch(handleApiError),
+        VideoGraphFigures().catch(handleApiError),
+        MissedGraphFigures().catch(handleApiError),
+        ProductCategorysCountList().catch(handleApiError),
+        NotResponseCustomerGraphFigures().catch(handleApiError),
+        InterestAppointmentCount().catch(handleApiError),
+        FeedbackCount().catch(handleApiError),
+        SmsCount().catch(handleApiError),
+        ServiceDetails().catch(handleApiError)
       ]);
     } catch (error) {
-      console.error('Error during refresh:', error);
+      console.error('Error in Refresh:', error instanceof Error ? error.message : 'Unknown error');
       // Optionally show an error message to the user
+      Alert.alert("Error", "Failed to refresh data. Please try again.");
     } finally {
-      // Always set loading to false when all operations are done or if there's an error
       setLoading(false);
     }
   };
@@ -1287,7 +1294,8 @@ const Home = (props) => {
                   borderWidth: 1,
                   textAlign:'center',
                   marginVertical: 5,
-                  borderRadius:18
+                  borderRadius:18,
+                  marginLeft:5
                 }}>
                     {count_ap}
                   </Text>
@@ -1388,7 +1396,8 @@ const Home = (props) => {
                   borderWidth: 1,
                   textAlign:'center',
                   marginVertical: 5,
-                  borderRadius:18
+                  borderRadius:18,
+                  marginLeft:5
                 }}>
                     {branchPreviewCount}
                   </Text>
@@ -1432,7 +1441,7 @@ const Home = (props) => {
                     <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>Pending</Text>
                     <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>
                       {
-                        serviceData.CountPending ?? serviceData.CountPending
+                        serviceData.countPending ?? serviceData.countPending
                       }
                     </Text>
                   </View>
@@ -1440,14 +1449,14 @@ const Home = (props) => {
                   <View style={{ alignItems: "center" }}>
                     <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>Due</Text>
                     <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>
-                      {serviceData.CountDue ?? serviceData.CountDue}
+                      {serviceData.countDue ?? serviceData.countDue}
                     </Text>
                   </View>
 
                   <View style={{ alignItems: "center" }}>
-                    <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>Overdue</Text>
+                    <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>Done</Text>
                     <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>
-                      {serviceData.CountOverDue ?? serviceData.CountOverDue}
+                      {serviceData.countDone ?? serviceData.countDone}
                     </Text>
                   </View>
                 </View>
@@ -2208,7 +2217,6 @@ const CartGraphView = ({ visible = false, data }) => {
 
 const ServiceGraphView = ({ visible = false, data }) => {
   const screenWidth = Dimensions.get("window").width - 60;
-
   const chartConfig = {
     backgroundGradientFrom: "#000",
     backgroundGradientFromOpacity: 0,

@@ -74,9 +74,46 @@ import Notifications from '../Screens/Dashboard/Notifications';
 import Appointment from '../Screens/Dashboard/Appointment';
 import ProductServiceScreen from '../Screens/Dashboard/ProductServiceScreen';
 import ZoomImageDetailScreen from '../Screens/Dashboard/ZoomImageDetailScreen';
-
+import { postRequest } from '../Services/RequestServices';
+import { useState, useEffect } from 'react';
 const DrawerComponent = ({ userDetails }) => {
   const Drawer = createDrawerNavigator();
+  const [totalPoint,setTotalPoint ] = useState(0);
+  const [redeemPointTitle,setRedeemPointTitle ] = useState("Redeem Points");
+
+  useEffect(() => {
+    if (!userDetails?.customer_id) {
+      console.log("Waiting for user details...");
+      return;
+    }
+  
+    console.log("Fetching points for customer ID:", userDetails.customer_id);
+    
+    const fetchPoints = async () => {
+      try {
+        const temparam = { customer_id: userDetails.customer_id };
+        const data = await postRequest(
+          "customervisit/getCustomerPointList", 
+          temparam, 
+          userDetails.userToken
+        );
+        
+        if (data?.data?.[0]?.total_points !== undefined) {
+          console.log("Total Points - ", data.data[0].total_points);
+          setTotalPoint(data.data[0].total_points);
+          setRedeemPointTitle(`Redeem Points (${data.data[0].total_points})`);
+        } else {
+          console.warn("Unexpected API response format:", data);
+        }
+      } catch (error) {
+        console.error("Error fetching points:", error);
+      }
+    };
+  
+    fetchPoints();
+  }, [userDetails]);  // Add userDetails to dependency array
+
+ 
   return (
     <Drawer.Navigator
       backBehavior="history"
@@ -153,7 +190,7 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Redeem Points" disableSearch />
+            <TitleBar {...props} title={redeemPointTitle} disableSearch />
           ),
         }}
       />
@@ -165,7 +202,7 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Extra Points" disableSearch />
+            <TitleBar {...props} title={`Extra Points ${totalPoint===0?'':`(${totalPoint})`}`} disableSearch />
           ),
         }}
       />

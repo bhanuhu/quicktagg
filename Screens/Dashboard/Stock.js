@@ -10,7 +10,7 @@ import moment from "moment";
 import Loading from "../../Components/Loading";
 import { CapitalizeName } from "../../utils/CapitalizeName";
 const Stock = (props) => {
-  const { userToken, branchId } = props.route.params;
+  const { userToken, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(false);
   const [griddata, setgriddata] = useState([]);
   const [param, setparam] = useState({
@@ -30,7 +30,7 @@ const Stock = (props) => {
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
-        console.log(JSON.stringify(resp.data));
+        console.log("Data------->",JSON.stringify(resp.data));
         setgriddata(resp.data);
       } else {
         Alert.alert(
@@ -41,6 +41,43 @@ const Stock = (props) => {
       setLoading(false);
     });
   };
+//name, mobile, branch
+   const filteredData = React.useMemo(() => {
+          
+          if (!search || !griddata?.length) {
+            return griddata || [];
+          }
+          
+          const searchTerm = search.toLowerCase().trim();
+          
+          const result = griddata.filter((item) => {
+            if (!item) return false;
+            
+            // Check each field for the search term
+            const fieldsToSearch = [
+              { name: 'branch_name', value: item.branch },
+              { name: 'status', value: item.status},
+              { name: 'entry_date', value: item.entry_date.replace("-", "/").replace("-", "/") ===
+                moment().format("DD/MM/YYYY")
+                ? item.created_time
+                : item.created_time + "\n" + item.entry_date.replace("-", "/").replace("-", "/")},
+            ];
+            
+            const hasMatch = fieldsToSearch.some(({ name, value }) => {
+              if (!value) return false;
+              const strValue = String(value).toLowerCase();
+              const match = strValue.includes(searchTerm);
+              if (match) {
+                console.log(`Match found in ${name}:`, value);
+              }
+              return match;
+            });
+            
+            return hasMatch;
+          });
+          
+          return result;
+        }, [griddata, search]);
 
   return (
     <View style={MyStyles.container}>
@@ -107,12 +144,12 @@ const Stock = (props) => {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={griddata}
+        data={filteredData}
         initialNumToRender={10}
         refreshing={loading}
         onRefresh={fetchStockList}
         renderItem={({ item, index }) => (
-          <View style={{ borderBottomWidth: 0.5, borderBottomColor: "#CCC" }}>
+          <View style={{ borderBottomWidth: 0.5, borderBottomColor: "#CCC" ,marginLeft:5}}>
             <List.Item
               key={item.tran_id}
               title={

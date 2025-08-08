@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Dimensions, RefreshControl } from 'react-native';
 import moment from 'moment';
 import {
@@ -73,7 +73,7 @@ const Profile = (props) => {
     catalogs: "",
   });
   const [isShow, setIsShow] = useState(true)
-
+  const [totalPoint, setTotalPoint] = useState(0)
 
 
   React.useEffect(() => {
@@ -112,12 +112,19 @@ const Profile = (props) => {
       }
       setLoading(false);
     });
-
-
-
-
   }, [customer_id, userToken]);
 
+  React.useEffect(() => {
+    let temparam = {
+      customer_id: customer_id,
+    };
+    postRequest("customervisit/getCustomerPointList", temparam, userToken).then(
+      (data) => {
+        console.log("points - ", data.data[0].total_points)
+        setTotalPoint(data.data[0].total_points);
+      }
+    );
+  }, [customer_id]);
 
 
 
@@ -180,11 +187,17 @@ const Profile = (props) => {
         </View>
       </View>
       <View style={{ margin: 10 }}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+          <View>
         <Text style={{ fontSize: 18, fontWeight: "bold" }}>
 
           {CapitalizeName(param.full_name)} {(param.gender == null ? "" : (param.gender == "male" ? "♂️" : "♀️")) + "      "}
           <Text style={{ color: "green" }}>{CapitalizeName(param.category_name)}</Text>
         </Text>
+      </View>
+        <Text style={{ fontSize: 18, fontWeight: "bold", marginHorizontal: 10, marginVertical: 5 }}>{totalPoint}</Text>
+        </View>
+
         <View style={{ flexDirection: "row", justifyContent: 'space-between' }}>
           <TouchableRipple onPress={() => Linking.openURL("tel:9874561230")}>
             <Text>{param.mobile}</Text>
@@ -723,6 +736,8 @@ const Exhibition = ({ userToken, customer_id }) => {
     )
       .then((resp) => {
         if (resp.status === 200 && Array.isArray(resp.data)) {
+          console.log(`service response --------> ${JSON.stringify(resp.data)}`)
+
           console.log('api',resp)
           const filtered = resp.data.filter(item => item.customer_id === customer_id);
           setServiceList(filtered);
@@ -1785,7 +1800,7 @@ const CustomerVoucherList = (props) => {
   const { userToken, customer_id } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [griddata, setgriddata] = useState([]);
-
+ const [totalPoint,setTotalPoint ] = useState(0);
   const Tab = createMaterialTopTabNavigator();
 
   React.useEffect(() => {
@@ -1812,6 +1827,18 @@ const CustomerVoucherList = (props) => {
 
   };
 
+  React.useEffect(() => {
+    let temparam = {
+      customer_id: customer_id,
+    };
+    postRequest("customervisit/getCustomerPointList", temparam, userToken).then(
+      (data) => {
+        console.log("points - ", data.data[0].total_points)
+        setTotalPoint(data.data[0].total_points);
+      }
+    );
+  }, [customer_id]);
+
   return (
     <View style={MyStyles.container}>
       {console.log("customer points", props)}
@@ -1829,7 +1856,7 @@ const CustomerVoucherList = (props) => {
         <Tab.Screen
           name="Category"
           children={() => <CustomerPoints {...props} />}
-          options={{ title: `Points` }}
+          options={{ title: `Points ${totalPoint===0?'':`(${totalPoint})`}` }}
           initialParams={props.route.params}
         />
 
@@ -2690,7 +2717,9 @@ const CustomerRedeem = (props) => {
       setLoading(true);
       // Wait for all API calls to complete
       await Promise.all([
-       Browse(),
+       BrowseActive(),
+       BrowseRedeemed(),
+       BrowseExpired(),
       ]);
     } catch (error) {
       console.error('Error during refresh:', error);
@@ -2702,28 +2731,24 @@ const CustomerRedeem = (props) => {
   };
 
 
-  React.useEffect(() => {
-    Refresh();
-  }, [customer_id]);
+//   React.useEffect(() => {
+//     Refresh();
+//   }, [customer_id]);
 
- const handleScroll = () => {
-    // Hide the banner when scrolling
-    setBannerVisible(false);
+//   const scrollTimeout = useRef(null);
+//  const handleScroll = () => {
+//     // Hide the banner when scrolling
 
-    // Clear any existing timeout
-    if (scrollTimeout.current) {
-      clearTimeout(scrollTimeout.current);
-    }
+//     // Clear any existing timeout
+//     if (scrollTimeout.current) {
+//       clearTimeout(scrollTimeout.current);
+//     }
 
-    // Show banner after 300ms of no scroll
-    scrollTimeout.current = setTimeout(() => {
-      setBannerVisible(true);
-    }, 100);
-  };
+//   };
 
   return (
     <View style={MyStyles.container}>
-      <ScrollView
+      {/* <ScrollView
               onScroll={handleScroll} scrollEventThrottle={16}
               refreshControl={
                 <RefreshControl
@@ -2731,7 +2756,7 @@ const CustomerRedeem = (props) => {
                   onRefresh={Refresh}
                 />
               }
-            >
+            > */}
       <FlatList
         style={{ marginVertical: 10 }}
         data={griddata}
@@ -2832,7 +2857,7 @@ const CustomerRedeem = (props) => {
         keyExtractor={(item, index) => index.toString()}
       />
 
-</ScrollView>
+{/* </ScrollView> */}
     </View>
   );
 }
@@ -2853,25 +2878,27 @@ const CustomerPoints = (props) => {
     ]);
   }, [activeGriddata, reddemedGriddata, expiredGriddata]);
 
-  const Refresh = async () => {
-    try {
-      setLoading(true);
-      // Wait for all API calls to complete
-      await Promise.all([
-       BrowseActive(),
-       BrowseRedeemed(),
-       BrowseExpired(),
-      ]);
-    } catch (error) {
-      console.error('Error during refresh:', error);
-      // Optionally show an error message to the user
-    } finally {
-      // Always set loading to false when all operations are done or if there's an error
-      setLoading(false);
-    }
-  };
+  // const Refresh = async () => {
+  //   try {
+  //     setLoading(true);
+  //     // Wait for all API calls to complete
+  //     await Promise.all([
+  //      BrowseActive(),
+  //      BrowseRedeemed(),
+  //      BrowseExpired(),
+  //     ]);
+  //   } catch (error) {
+  //     console.error('Error during refresh:', error);
+  //     // Optionally show an error message to the user
+  //   } finally {
+  //     // Always set loading to false when all operations are done or if there's an error
+  //     setLoading(false);
+  //   }
+  // };
   React.useEffect(() => {
-    Refresh();
+    BrowseActive();
+    BrowseRedeemed();
+    BrowseExpired();
   }, [customer_id]);
 
   const BrowseActive = () => {
@@ -2937,25 +2964,22 @@ const CustomerPoints = (props) => {
     });
     setLoading(false);
   };
-  const handleScroll = () => {
-    // Hide the banner when scrolling
-    setBannerVisible(false);
 
-    // Clear any existing timeout
-    if (scrollTimeout.current) {
-      clearTimeout(scrollTimeout.current);
-    }
+  // const scrollTimeout = useRef(null);
+  // const handleScroll = () => {
+  //   // Hide the banner when scrolling
 
-    // Show banner after 300ms of no scroll
-    scrollTimeout.current = setTimeout(() => {
-      setBannerVisible(true);
-    }, 100);
-  };
+  //   // Clear any existing timeout
+  //   if (scrollTimeout.current) {
+  //     clearTimeout(scrollTimeout.current);
+  //   }
+
+  // };
 
   return (
 
     <View style={MyStyles.container}>
-      <ScrollView
+      {/* <ScrollView
               onScroll={handleScroll} scrollEventThrottle={16}
               refreshControl={
                 <RefreshControl
@@ -2963,7 +2987,7 @@ const CustomerPoints = (props) => {
                   onRefresh={Refresh}
                 />
               }
-            >
+            > */}
       <FlatList
         style={{ marginVertical: 10 }}
         data={griddata}
@@ -3105,24 +3129,25 @@ const CustomerPoints = (props) => {
           props.navigation.navigate("ExtraPoints", { customer_id })
         }
       />
-      </ScrollView>
+      {/* </ScrollView> */}
     </View>
   )
 }
 
 const PointForm = (props) => {
-  const { customer_id, userToken } = props.route.params;
+  const { customer_id, userToken, branchId } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
-  const { userName } = props.route.params;
+  const { user_Name } = props.route.params;
   const { missCallUser } = props.route.params;
   const [param, setparam] = useState({
     customer_id,
     redeemPoint: "",
     remark: "",
     staff_id: "",
-    full_name: userName,
+    full_name: user_Name,
     mobile: missCallUser,
     staff_name: "", 
+    branch_id: branchId,
   });
 
 
@@ -3246,22 +3271,21 @@ const PointForm = (props) => {
 }
 
 const ExtraPoints = (props) => {
-  const { customer_id } = props.route.params;
+  const { customer_id,branchId } = props.route.params;
   const { userToken } = props.route.params;
   const { missCallUser } = props.route.params;
   const { userName } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
-
+  const [totalPoint, setTotalPoint] = useState(0);
   console.log(props)
   const [param, setparam] = useState({
     customer_id:customer_id,
     remark: "",
     extra_point: "",
-    staff_id: "",
     mobile:missCallUser,
     staff_name: "",
     full_name: userName,
-
+    branch_id:branchId,
   });
 
 
@@ -3302,7 +3326,6 @@ const ExtraPoints = (props) => {
               const selectedStaff = stafflist.find((item) => item.staff_id === val);
               setparam({
                 ...param,
-                staff_id: val,
                 staff_name: selectedStaff?.name || ''
               });
             }}
@@ -3348,7 +3371,6 @@ const ExtraPoints = (props) => {
             labelStyle={{ color: "black" }}
             onPress={() => {
               // setLoading(true);
-              // console.log(param)
 
               postRequest(
                 "customervisit/insert/extraPoint",
@@ -3362,7 +3384,6 @@ const ExtraPoints = (props) => {
                     props.navigation.goBack();
                     setparam({
                       ...param,
-                      staff_id: "",
                       staff_name: "",
                       extra_point: "",
                       remark: "",

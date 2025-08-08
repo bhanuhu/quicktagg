@@ -7,6 +7,8 @@ import moment from 'moment';
 import DropDownPicker from 'react-native-dropdown-picker';
 import { postRequest } from '../Services/RequestServices';
 import MyStyles from '../Styles/MyStyles';
+import axios from 'axios';
+import { serviceUrl, logoUrl } from '../Services/Constants';
 
 const { width, height } = Dimensions.get('window');
 
@@ -14,17 +16,16 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     // if (!visible) return <></>;
     const [isDrawerVisible, setDrawerVisible] = useState(false);
     const [param, setParam] = useState({
-        file: "",
-        message: "",
-        extra_text: "",
-        selectedCustomer: [],
-        contact_us: "",
-        mobiles: [],
-        bb_id: "",
+        "file": null,
+        "message": "",
+        "extra_text": "",
+        "contact_us": "",
+        "mobiles": [],
+        "bb_id":null,
     });
 
     const [newContact, setNewContact] = useState("");
-
+    const [mobile, setMobile] = useState([]);
     const [image, setImage] = React.useState(require("../assets/upload.png"));
 
     const [isRateModalVisible, setRateModalVisible] = useState(false);
@@ -149,6 +150,8 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         //             open: (silverPerGramgnir - 2).toFixed(2),
         //         }
         //     };
+        //     console.log('Gold prices:', goldPrices);
+        //     console.log('Silver prices:', silverPrices);
 
         //     setRates({ gold: goldPrices, silver: silverPrices });
         // } catch (error) {
@@ -159,52 +162,88 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     };
 
 
-
+    
+    const [logo, setLogo] = useState(null);
     const openDrawer = () => setDrawerVisible(true);
     const closeDrawer = () => setDrawerVisible(false);
 
     const closeRateModal = () => setRateModalVisible(false);
-
-    const handleSubmit = () => {
-        console.log(param, 'rr')
-        postRequest(
-            "customervisit/whatsapp/bulk/message",
-            { formData: param },
-            userToken
-        ).then((resp) => {
-            console.log(`W -> ${JSON.stringify(resp)}`)
-            if (resp.status == 200) {
-
-                setgriddata([...griddata, resp.data]);
-            } else {
-                Alert.alert(
-                    "Error !",
-                    "Oops! \nSeems like we run into some Server Error"
-                );
-            }
-        });
-    };
-
-    // Fetch customers
-    const fetchCustomers = () => {
-        postRequest(
-            "transactions/customer/customerListMob",
-            { branch_id: branchId },
-            userToken
-        ).then((resp) => {
-            console.log(`customer list -> ${JSON.stringify(resp.data)}`)
-            if (resp.status == 200) {
-                setCustomerList(resp.data);
-                setFilteredCustomers(resp.data);
+    
+    const handleSubmit = async () => {
+        console.log(userToken)  
+        const formData = new FormData();
+        formData.append("message", param.message);
+        formData.append("extra_text", param.extra_text);
+        formData.append("contact_us", param.contact_us);
+        formData.append("mobiles", param.mobiles);
+        formData.append("bb_id", param.bb_id);
+      
+        if (param.file) {
+          formData.append("file", param.file);
+        }
+        
+      
+        try {
+            const response = await axios.post(
+              serviceUrl + "customervisit/whatsapp/bulk/message",
+              formData,
+              {
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "multipart/form-data",
+                  "auth-token": userToken,
+                },
+              }
+            );
+            if (response.status === 200) {
+                setgridData([...gridData, response.data]);
             } else {
                 Alert.alert(
                     "Error!",
                     "Oops! \nSeems like we run into some Server Error"
                 );
             }
-        });
+          } catch (error) {
+            console.error('Error sending WhatsApp message:', error);
+          }
     };
 
+    // Fetch customers
+    const fetchCustomers = () => {
+        try {
+            postRequest(
+                "transactions/customer/customerListMob",
+                { branch_id: branchId },
+                userToken
+            ).then((resp) => {
+                console.log(`customer list -> ${JSON.stringify(resp.data)}`)
+                if (resp.status == 200) {
+                    setCustomerList(resp.data);
+                    setFilteredCustomers(resp.data);
+                } else {
+                    Alert.alert(
+                        "Error!",
+                        "Oops! \nSeems like we run into some Server Error"
+                    );
+                }
+            }).catch(error => {
+                console.error('Error fetching customers:', error);
+            });
+        } catch (error) {
+            console.error('Error in fetchCustomers:', error);
+        }
+    }
+
+    const fetchImage = () => {
+        postRequest("customervisit/get_branch_logo", { }, userToken).then((data) => {
+            setLoading(true);
+            setImage({ uri: `${logoUrl}${data.data[0].logo}` });  // Wrap URL in an object
+            setLoading(false);
+        });
+    };
+    React.useEffect(() => {
+        fetchImage();
+    }, []); 
     const handleSearch = (text) => {
         setSearchText(text);
 
@@ -259,6 +298,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     const openModal = () => {
         setModalVisible(true);
         if (customerList.length === 0) fetchCustomers();
+        fetchImage();
     };
 
     return (
@@ -289,7 +329,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                 <TouchableOpacity onPress={openRateModal} style={styles.promoteContainer}>
                     <View style={styles.priceBox}>
                         <Text style={styles.goldLabel}>24k/g Gold</Text>
-                        <Text style={styles.goldPrice}>₹9700.00</Text>
+                        <Text style={styles.goldPrice}>₹97000.00</Text>
 
                         <Image
                             source={require('../assets/coins.png')}
@@ -436,14 +476,17 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                         const selectedNames = filteredCustomers
                                                             .filter(c => selectedCustomers.includes(c.customer_id))
                                                             .map(c => c.mobile)
-                                                            .join(', ');
-
+                                                            .join(",");
+                                                            
+                                                        
                                                         setParam(prev => ({
                                                             ...prev,
-                                                            mobiles: selectedNames,
-                                                            bb_id: branchId
+                                                            bb_id: parseInt(branchId),
+                                                             mobiles:selectedNames
                                                         }));
+                                                        console.log(selectedNames,"selectedNames")
                                                         setModalVisible(false);
+                                                        setSelectedCustomers([])
                                                     }}
                                                 >
                                                     <Text style={styles.doneText}>Done</Text>
@@ -464,7 +507,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     placeholder="Type here..."
                                     multiline
                                     value={param.message}
-                                    onChangeText={(text) => setParam(prev => ({ ...prev, message1: text }))}
+                                    onChangeText={(text) => setParam(prev => ({ ...prev, message: text }))}
                                     maxLength={200}
                                 />
                                 <Text style={styles.counter}>{param.message.length}/200</Text>
@@ -476,7 +519,8 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                         style={{ borderBottomColor: '#333', width: 100, height: 35 }}
                                         placeholder="Type here..."
                                         value={param.contact_us}
-                                        onChangeText={(text) => setParam(prev => ({ ...prev, contactOn: text }))}
+                                        keyboardType="numeric"
+                                        onChangeText={(text) => setParam(prev => ({ ...prev, contact_us: text }))}
                                         maxLength={200}
                                     />
                                     <Text style={styles.label}> for any assistance.</Text>
