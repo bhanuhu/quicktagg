@@ -9,6 +9,7 @@ import { postRequest } from '../Services/RequestServices';
 import MyStyles from '../Styles/MyStyles';
 import axios from 'axios';
 import { serviceUrl, logoUrl } from '../Services/Constants';
+import { MoveDown } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
@@ -52,113 +53,125 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 
     const openRateModal = async () => {
         setRateModalVisible(true)
-        // try {
-        //     setRateModalVisible(true)
-        //     const res = await fetch(
-        //         'https://api.metals.dev/v1/latest?api_key=Z7NJ5I6LPQTXQCF2ZURE269F2ZURE&currency=USD&unit=g'
-        //     );
+        try {
+            setRateModalVisible(true)
+            const res = await fetch(
+                'https://api.metals.dev/v1/latest?api_key=Z7NJ5I6LPQTXQCF2ZURE269F2ZURE&currency=USD&unit=g'
+            );
 
 
-        //     const resinr = await fetch(
-        //         'https://api.metals.dev/v1/latest?api_key=Z7NJ5I6LPQTXQCF2ZURE269F2ZURE&currency=INR&unit=g'
-        //     );
+            const resinr = await fetch(
+                'https://api.metals.dev/v1/latest?api_key=Z7NJ5I6LPQTXQCF2ZURE269F2ZURE&currency=INR&unit=g'
+            );
 
-        //     const goldio = await fetch('https://www.goldapi.io/api/XAU/INR', {
-        //         headers: {
-        //             'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
-        //         }
-        //     });
+            const goldio = await fetch('https://www.goldapi.io/api/XAU/INR', {
+                headers: {
+                    'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
+                }
+            });
 
-        //     const goldiousd = await fetch('https://www.goldapi.io/api/XAU/USD', {
-        //         headers: {
-        //             'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
-        //         }
-        //     });
+            const goldiousd = await fetch('https://www.goldapi.io/api/XAU/USD', {
+                headers: {
+                    'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
+                }
+            });
 
-        //     const goldiosilver = await fetch('https://www.goldapi.io/api/XAG/INR', {
-        //         headers: {
-        //             'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
-        //         }
-        //     });
+            const goldiosilver = await fetch('https://www.goldapi.io/api/XAG/INR', {
+                headers: {
+                    'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
+                }
+            });
 
-        //     const json = await res.json();
+            const goldiosilverusd = await fetch('https://www.goldapi.io/api/XAG/USD', {
+                headers: {
+                    'x-access-token': 'goldapi-6fnhsm9q3zdy4-io'
+                }
+            });
+            const json = await res.json();
 
-        //     const Inrjson = await resinr.json();
+            const Inrjson = await resinr.json();
 
-        //     const goildiojson = await goldio.json();
+            const goildiojson = await goldio.json();
 
-        //     const goildiojsonusd = await goldiousd.json();
+            const goildiojsonusd = await goldiousd.json();
 
-        //     const goldiosilverinr = await goldiosilver.json();
+            const goldiosilverinr = await goldiosilver.json();
+            const goldiosilverjsonusd = await goldiosilverusd.json();
 
+            console.log('goldiosilverjsonusd----->', goldiosilverjsonusd);
+            console.log('goldiosilverinr----->', goldiosilverinr);
+            console.log('goldiousd----->', goildiojsonusd);
+            console.log('goldiojson----->', goildiojson);
+            console.log('inrjson----->', Inrjson);
+            console.log('json----->', json);
 
-        //     const goldPerGram = json.metals.mcx_gold;
-        //     const InrjsongoldPerGram = Inrjson.metals.mcx_gold;
-        //     const price_gram_24k = goildiojson.price_gram_24k;
-        //     const price_gram_22k = goildiojson.price_gram_22k;
-        //     const price_gram_20k = goildiojson.price_gram_20k;
-        //     const price_gram_18k = goildiojson.price_gram_18k;
+            const goldPerGram = json.metals.mcx_gold;
+            const InrjsongoldPerGram = Inrjson.metals.mcx_gold;
+            const price_gram_24k = goildiojson.price_gram_24k;
+            const price_gram_22k = goildiojson.price_gram_22k;
+            const price_gram_20k = goildiojson.price_gram_20k;
+            const price_gram_18k = goildiojson.price_gram_18k;
 
-        //     const price_gram_24kusd = goildiojsonusd.price_gram_24k;
-        //     const price_gram_22kusd = goildiojsonusd.price_gram_22k;
-        //     const price_gram_20kusd = goildiojsonusd.price_gram_20k;
-        //     const price_gram_18kusd = goildiojsonusd.price_gram_18k;
+            const price_gram_24kusd = goildiojsonusd.price_gram_24k;
+            const price_gram_22kusd = goildiojsonusd.price_gram_22k;
+            const price_gram_20kusd = goildiojsonusd.price_gram_20k;
+            const price_gram_18kusd = goildiojsonusd.price_gram_18k;
 
-        //     const silverPerGram = json.metals.mcx_silver;
-        //     const silverPerGramgnir = Inrjson.metals.mcx_silver;
+            const silverPerGram = json.metals.mcx_silver;
+            const silverPerGramgnir = Inrjson.metals.mcx_silver;
 
-        //     const gsu = goldiosilverinr.price_gram_24k
+            const gsu = goldiosilverinr.price_gram_24k
+            const gsuusd = goldiosilverjsonusd.price_gram_24k
 
+            const goldPrices = {
 
-        //     const goldPrices = {
+                '24K (MCX)': {
+                    live: price_gram_24kusd.toFixed(2),
+                    open: (price_gram_24k - 10).toFixed(2),
+                },
 
-        //         '24K (MCX)': {
-        //             live: price_gram_24kusd.toFixed(2),
-        //             open: (price_gram_24k - 10).toFixed(2),
-        //         },
+                '24K': {
+                    live: goldPerGram.toFixed(2),
+                    open: (InrjsongoldPerGram - 10).toFixed(2),
+                },
 
-        //         '24K': {
-        //             live: goldPerGram.toFixed(2),
-        //             open: (InrjsongoldPerGram - 10).toFixed(2),
-        //         },
+                '22K': {
+                    live: price_gram_22kusd.toFixed(2),
+                    open: (price_gram_22k - 10).toFixed(2),
+                },
 
-        //         '22K': {
-        //             live: price_gram_22kusd.toFixed(2),
-        //             open: (price_gram_22k - 10).toFixed(2),
-        //         },
+                '20K': {
+                    live: price_gram_20kusd.toFixed(2),
+                    open: (price_gram_20k - 10).toFixed(2),
+                },
 
-        //         '20K': {
-        //             live: price_gram_20kusd.toFixed(2),
-        //             open: (price_gram_20k - 10).toFixed(2),
-        //         },
+                '18K': {
+                    live: price_gram_18kusd.toFixed(2),
+                    open: (price_gram_18k - 10).toFixed(2),
+                }
+            };
 
-        //         '18K': {
-        //             live: price_gram_18kusd.toFixed(2),
-        //             open: (price_gram_18k - 10).toFixed(2),
-        //         }
-        //     };
+            const silverPrices = {
 
-        //     const silverPrices = {
+                'Silver (MCX)': {
+                    live: silverPerGram.toFixed(2),
+                    open: (silverPerGramgnir).toFixed(2),
+                },
 
-        //         'Silver (MCX)': {
-        //             live: silverPerGram.toFixed(2),
-        //             open: (silverPerGramgnir - 2).toFixed(2),
-        //         },
+                'Silver': {
+                    live: gsuusd.toFixed(2),
+                    open: (gsu).toFixed(2),
+                }
+            };
+            console.log('Gold prices:------>', goldPrices);
+            console.log('Silver prices:', silverPrices);
 
-        //         'Silver': {
-        //             live: gsu.toFixed(2),
-        //             open: (silverPerGramgnir - 2).toFixed(2),
-        //         }
-        //     };
-        //     console.log('Gold prices:', goldPrices);
-        //     console.log('Silver prices:', silverPrices);
-
-        //     setRates({ gold: goldPrices, silver: silverPrices });
-        // } catch (error) {
-        //     console.error('Error fetching metal prices:', error);
-        // } finally {
-        //     setLoading(false);
-        // }
+            setRates({ gold: goldPrices, silver: silverPrices });
+        } catch (error) {
+            console.error('Error fetching metal prices:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
 
@@ -326,25 +339,29 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 
                     </View>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={openRateModal} style={styles.promoteContainer}>
-                    <View style={styles.priceBox}>
-                        <Text style={styles.goldLabel}>24k/g Gold</Text>
-                        <Text style={styles.goldPrice}>₹97000.00</Text>
-
-                        <Image
-                            source={require('../assets/coins.png')}
-                            style={{
-                                width: 50,
-                                height: 50,
-                                position: 'absolute',
-                                right: -10,
-                                top: -10,
-
-                            }}
-                        />
-
-                    </View>
-                </TouchableOpacity>
+                <TouchableOpacity 
+    onPress={openRateModal} 
+    style={[styles.promoteContainer, { justifyContent: 'center', alignItems: 'center' }]}
+>
+    <View style={[styles.priceBox, { 
+        flexDirection: 'row', 
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%'
+    }]}>
+        <Image
+            source={require('../assets/coins.png')}
+            style={{
+                width: 50,
+                height: 50,
+                marginRight: 8,
+            }}
+        />
+        <Text style={styles.goldLabel}> 
+            Gold Price
+        </Text>
+    </View>
+</TouchableOpacity>
 
 
             </View>
@@ -645,82 +662,82 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
                                             <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>USD</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 100.00</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["24K (MCX)"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
                                             <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>INR</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 10000.00</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["24K (MCX)"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["24K"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 1000</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["24K"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 22K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["22K"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["22K"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 20K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["20K"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["20K"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 18K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["18K"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["18K"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER (MCX)</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.silver["Silver (MCX)"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>₹ 1000</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.silver["Silver (MCX)"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
 
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24</Text>
+                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.silver["Silver"].live}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>$ 1000</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.silver["Silver"].open}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -839,6 +856,8 @@ const styles = StyleSheet.create({
     promoteRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        alignSelf: 'center',
+        marginRight: 60
     },
     promoteText: {
         fontSize: 20,
@@ -856,8 +875,12 @@ const styles = StyleSheet.create({
         marginTop: -3
     },
     goldLabel: {
-        fontSize: 10,
-        color: '#444',
+        fontSize: 20,
+        color: 'black',
+        fontWeight: 'bold',
+        flexDirection: 'row',
+        marginLeft: 0,
+        marginRight: 20,
     },
     goldPrice: {
         fontSize: 17,

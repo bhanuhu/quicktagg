@@ -44,7 +44,6 @@ import { CapitalizeName } from '../utils/CapitalizeName';
 import { useNavigation } from '@react-navigation/native';
 import MedalIcon from 'react-native-vector-icons/FontAwesome6';
 import DropDown from '../Components/DropDown';
-
 const Profile = (props) => {
   const Tab = createMaterialTopTabNavigator();
   const { userToken, customer_id, customer_mobile, missCallUser, branchId } = props.route.params;
@@ -3138,14 +3137,13 @@ const PointForm = (props) => {
   const { customer_id, userToken, branchId } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
   const { user_Name } = props.route.params;
-  const { missCallUser } = props.route.params;
   const [param, setparam] = useState({
     customer_id,
     redeemPoint: "",
     remark: "",
     staff_id: "",
     full_name: user_Name,
-    mobile: missCallUser,
+    mobile: "",
     staff_name: "", 
     branch_id: branchId,
   });
@@ -3153,6 +3151,19 @@ const PointForm = (props) => {
 
 
   React.useEffect(() => {
+    let data = { customer_id: customer_id };
+    postRequest("customers/customer/profile", data, userToken).then((resp) => {
+      if (resp.status === 200) {
+        const customerData = resp.data[0];
+        console.log("customerData", customerData)
+        setparam({...param,mobile:customerData.mobile});
+      } else {
+        Alert.alert(
+          "Error!",
+          "Oops! \nSeems like we run into some Server Error"
+        );
+      }
+    });
 
     postRequest("masters/staff/browse", param, userToken).then((resp) => {
       if (resp.status == 200) {
@@ -3164,9 +3175,9 @@ const PointForm = (props) => {
         );
       }
     });
-
-
+    
   }, [customer_id]);
+
 
   console.log(customer_id)
   return (
@@ -3242,6 +3253,8 @@ const PointForm = (props) => {
                 param,
                 userToken
               ).then((resp) => {
+                console.log('submited data', resp)
+
                 if (resp.status == 200) {
                   console.log(resp)
                   if (resp.data[0].valid) {
@@ -3273,7 +3286,6 @@ const PointForm = (props) => {
 const ExtraPoints = (props) => {
   const { customer_id,branchId } = props.route.params;
   const { userToken } = props.route.params;
-  const { missCallUser } = props.route.params;
   const { userName } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
   const [totalPoint, setTotalPoint] = useState(0);
@@ -3282,7 +3294,7 @@ const ExtraPoints = (props) => {
     customer_id:customer_id,
     remark: "",
     extra_point: "",
-    mobile:missCallUser,
+    mobile:"",
     staff_name: "",
     full_name: userName,
     branch_id:branchId,
@@ -3303,8 +3315,20 @@ const ExtraPoints = (props) => {
         );
       }
     });
-
-
+ 
+    let data = { customer_id: customer_id };
+    postRequest("customers/customer/profile", data, userToken).then((resp) => {
+      if (resp.status === 200) {
+        const customerData = resp.data[0];
+        console.log("customerData", customerData)
+        setparam({...param,mobile:customerData.mobile});
+      } else {
+        Alert.alert(
+          "Error!",
+          "Oops! \nSeems like we run into some Server Error"
+        );
+      }
+    });
   }, [customer_id]);
 
   return (
@@ -3377,16 +3401,18 @@ const ExtraPoints = (props) => {
                 param,
                 userToken
               ).then((resp) => {
-                console.log('data', param)
+                console.log('data--------->', param)
+                console.log('submited data', resp)
+
                 if (resp.status == 200) {
                   if (resp.data[0].valid) {
                     console.log('submited data', resp)
                     props.navigation.goBack();
                     setparam({
                       ...param,
-                      staff_name: "",
                       extra_point: "",
                       remark: "",
+                      full_name: "",
                     });
                   }
                   // setLoading(false);
