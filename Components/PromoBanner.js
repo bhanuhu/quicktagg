@@ -662,11 +662,11 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
                                             <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>USD</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["24K (MCX)"].live}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["24K (MCX)"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
                                             <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>INR</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["24K (MCX)"].open}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["24K (MCX)"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -675,10 +675,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["24K"].live}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["24K"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["24K"].open}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["24K"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -687,10 +687,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 22K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["22K"].live}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["22K"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["22K"].open}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["22K"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -699,10 +699,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 20K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["20K"].live}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["20K"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["20K"].open}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["20K"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -711,10 +711,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 18K</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.gold["18K"].live}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["18K"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.gold["18K"].open}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["18K"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -722,10 +722,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER (MCX)</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.silver["Silver (MCX)"].live}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.silver["Silver (MCX)"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.silver["Silver (MCX)"].open}`}</Text>
+                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.silver["Silver (MCX)"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -734,10 +734,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER</Text>
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates?.silver["Silver"].live}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.silver["Silver"].live : ""}`}</Text>
                                         </View>
                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates?.silver["Silver"].open}`}</Text>
+                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.silver["Silver"].open : ""}`}</Text>
                                         </View>
                                     </View>
                                 </View>
@@ -905,10 +905,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         width: '100%',
-        height: height * 0.60,
+        maxHeight: height * 0.80,
         backgroundColor: '#fff',
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
+        paddingTop: 20,
         // paddingTop: 16,
         // paddingHorizontal: 20,
     },

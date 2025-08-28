@@ -1285,10 +1285,9 @@ const Home = (props) => {
                     marginVertical: 5,
                     width: "50%",
                   }}> */}
-                  <Text  style={{
+                  <Button mode="contained"  style={{
                   backgroundColor: "#ec1278ff",
-                  width: "50%",
-                  fontSize: 18,
+                  width: "25%",
                   color:'#fff',
                   borderColor: "#FFF",
                   borderWidth: 1,
@@ -1297,8 +1296,8 @@ const Home = (props) => {
                   borderRadius:18,
                   marginLeft:5
                 }}>
-                    {count_ap}
-                  </Text>
+                    <Text style={{color:'#fff', fontSize:20}}>{count_ap}</Text>
+                  </Button>
                 </Pressable>
               </View>
               <Text
@@ -1309,7 +1308,8 @@ const Home = (props) => {
                   marginVertical: 5,
                   width: "50%",
                   width: "50%",
-                  fontWeight: 'bold'
+                  fontWeight: 'bold',
+                  marginLeft:-50
                 }}
               >
                 Interest
@@ -1387,20 +1387,21 @@ const Home = (props) => {
                 >
                   <View style={{ flexGrow: 1 }}>
                 <Pressable onPress={() => props.navigation.navigate("ProductServiceScreen")}>
-                  <Text  style={{
+                  <Button  style={{
                   backgroundColor: "#ec1278ff",
-                  width: "50%",
+                  width: 15,
                   fontSize: 18,
-                  color:'#fff',
+                  color:'white',
+                  flex:1,
                   borderColor: "#FFF",
                   borderWidth: 1,
                   textAlign:'center',
-                  marginVertical: 5,
                   borderRadius:18,
-                  marginLeft:5
+                  marginLeft:5,
+                  padding:0
                 }}>
-                    {branchPreviewCount}
-                  </Text>
+                    <Text style={{color:'white', fontSize:20}}>{branchPreviewCount}</Text>
+                  </Button>
                 </Pressable>
               </View>
                   <Text
@@ -1410,8 +1411,8 @@ const Home = (props) => {
                       fontSize: 18,
                       marginVertical: 5,
                       width: "50%",
-                      width: "50%",
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
+                      marginLeft:-50
                     }}
                   >
                     Services
