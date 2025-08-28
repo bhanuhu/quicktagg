@@ -1285,7 +1285,7 @@ const Home = (props) => {
                     marginVertical: 5,
                     width: "50%",
                   }}> */}
-                  <Button mode="contained"  style={{
+                  <Button onPress={() => props.navigation.navigate("Appointment")} mode="contained"  style={{
                   backgroundColor: "#ec1278ff",
                   width: "25%",
                   color:'#fff',
@@ -1387,7 +1387,7 @@ const Home = (props) => {
                 >
                   <View style={{ flexGrow: 1 }}>
                 <Pressable onPress={() => props.navigation.navigate("ProductServiceScreen")}>
-                  <Button  style={{
+                  <Button onPress={() => props.navigation.navigate("ProductServiceScreen")}  style={{
                   backgroundColor: "#ec1278ff",
                   width: 15,
                   fontSize: 18,

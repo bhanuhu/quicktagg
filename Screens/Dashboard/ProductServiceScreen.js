@@ -129,6 +129,8 @@ const ProductServiceScreen = ({ route, navigation }) => {
       <View style={{ paddingHorizontal: 10 }}>
         <TextInput
           placeholder="Search by name, number, vehicle, staff, category..."
+          placeholderTextColor="#000"  // Add this line
+
           value={searchText}
           onChangeText={setSearchText}
           style={{
@@ -136,6 +138,7 @@ const ProductServiceScreen = ({ route, navigation }) => {
             borderColor: '#ccc',
             borderRadius: 5,
             padding: 8,
+            color:'#000',
             marginBottom: 10,
             fontSize: 14,
           }}
