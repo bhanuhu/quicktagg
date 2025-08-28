@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal, Pressable, Image, ScrollView, SafeAreaView, TextInput, Button, ImageBackground, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Modal, Pressable, Image, ScrollView, SafeAreaView, TextInput, Button, ImageBackground, FlatList, ActivityIndicator, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import ImageUpload from './ImageUpload';
 import SelectCustomer from './SelectCustomer';
@@ -32,12 +32,13 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     const [isRateModalVisible, setRateModalVisible] = useState(false);
     const [rates, setRates] = useState(null);
     const [loading, setLoading] = useState(true);
-
+    const [goldLoading, setGoldLoading] = useState(true);
     const [customerList, setCustomerList] = useState([]);
     const [filteredCustomers, setFilteredCustomers] = useState([]);
     const [selectedCustomers, setSelectedCustomers] = useState([]);
     const [searchText, setSearchText] = useState("");
     const [modalVisible, setModalVisible] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -55,6 +56,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         setRateModalVisible(true)
         try {
             setRateModalVisible(true)
+            setGoldLoading(true)
             const res = await fetch(
                 'https://api.metals.dev/v1/latest?api_key=Z7NJ5I6LPQTXQCF2ZURE269F2ZURE&currency=USD&unit=g'
             );
@@ -167,6 +169,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
             console.log('Silver prices:', silverPrices);
 
             setRates({ gold: goldPrices, silver: silverPrices });
+            setGoldLoading(false)
         } catch (error) {
             console.error('Error fetching metal prices:', error);
         } finally {
@@ -174,7 +177,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         }
     };
 
-
+   
     
     const [logo, setLogo] = useState(null);
     const openDrawer = () => setDrawerVisible(true);
@@ -184,29 +187,29 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     
     const handleSubmit = async () => {
         console.log(userToken)  
-        const formData = new FormData();
-        formData.append("message", param.message);
+            const formData = new FormData();
+            formData.append("message", param.message);
         formData.append("extra_text", param.extra_text);
         formData.append("contact_us", param.contact_us);
         formData.append("mobiles", param.mobiles);
         formData.append("bb_id", param.bb_id);
-      
-        if (param.file) {
-          formData.append("file", param.file);
-        }
-        
+          
+            if (param.file) {
+                formData.append("file", param.file);
+            }
+            
       
         try {
             const response = await axios.post(
-              serviceUrl + "customervisit/whatsapp/bulk/message",
-              formData,
-              {
-                headers: {
-                  Accept: "application/json",
-                  "Content-Type": "multipart/form-data",
-                  "auth-token": userToken,
-                },
-              }
+                serviceUrl + "customervisit/whatsapp/bulk/message",
+                formData,
+                {
+                    headers: {
+                        Accept: "application/json",
+                        "Content-Type": "multipart/form-data",
+                        "auth-token": userToken,
+                    },
+                }
             );
             if (response.status === 200) {
                 setgridData([...gridData, response.data]);
@@ -216,9 +219,9 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                     "Oops! \nSeems like we run into some Server Error"
                 );
             }
-          } catch (error) {
+        } catch (error) {
             console.error('Error sending WhatsApp message:', error);
-          }
+        }
     };
 
     // Fetch customers
@@ -596,163 +599,347 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
             >
                 <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
                     <Pressable style={styles.backdrop} onPress={closeRateModal} />
-
                     <View style={styles.drawer}>
-
                         {/* Close Button Centered */}
                         <View style={styles.closeBar}>
                             <View style={{ flex: 1 }} />
-                            <TouchableOpacity onPress={closeRateModal} style={{ position: 'absolute', top: -60, backgroundColor: '#fff', borderRadius: 50, padding: 5, width: 30, height: 30, justifyContent: 'center', alignItems: 'center' }}>
+                            <TouchableOpacity 
+                                onPress={closeRateModal} 
+                                style={{ 
+                                    position: 'absolute', 
+                                    top: -60, 
+                                    backgroundColor: '#fff', 
+                                    borderRadius: 50, 
+                                    padding: 5, 
+                                    width: 30, 
+                                    height: 30, 
+                                    justifyContent: 'center', 
+                                    alignItems: 'center' 
+                                }}
+                            >
                                 <Icon name="close" size={18} color="#333" />
                             </TouchableOpacity>
                             <View style={{ flex: 1 }} />
                         </View>
-                        <ImageBackground source={require("../assets/login-bg.jpg")} style={{ width: '100%', height: '100%', paddingVertical: 0 }}  // Add height if needed
-                            imageStyle={{ borderRadius: 16 }}>
-                            <View style={{ borderRadius: 16, padding: 20, width: '100%', alignSelf: 'center' }}>
-                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                                    <View>
-                                        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>Live Rates</Text>
-                                        <Text style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>Today's Gold & Silver Prices *</Text>
+                        <View style={{ flex: 1 }}>
+                            <ImageBackground 
+                                source={require("../assets/login-bg.jpg")} 
+                                style={{ width: '100%', height: '100%', paddingVertical: 0 }}
+                                imageStyle={{ borderRadius: 16 }}
+                            >
+                                {goldLoading && (
+                                    <View style={styles.loadingOverlay}>
+                                        <View style={styles.loadingContent}>
+                                            <ActivityIndicator size="large" color="#0000ff" />
+                                            <Text style={{ marginTop: 10, color: '#000' }}>Loading gold rates...</Text>
+                                        </View>
                                     </View>
-                                    <View>
-                                        <Image source={require('../assets/coins.png')} style={{ width: 75, height: 75, borderRadius: 5, marginRight: 10 }} />
+                                )}
+                                <View style={[styles.contentContainer, goldLoading && styles.contentBlurred]}>
+                                    <View style={{ borderRadius: 16, padding: 20, width: '100%', alignSelf: 'center' }}>
+                                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                                            <View>
+                                                <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 4 }}>Live Rates</Text>
+                                                <Text style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>Today's Gold & Silver Prices *</Text>
+                                            </View>
+                                            <View>
+                                                <Image 
+                                                    source={require('../assets/coins.png')} 
+                                                    style={{ width: 75, height: 75, borderRadius: 5, marginRight: 10 }} 
+                                                />
+                                            </View>
+                                        </View>
 
-                                    </View>
-                                </View>
-
-                                {/* {loading ? (
-                                    <Text style={{ fontSize: 14, color: '#888' }}>Loading rates...</Text>
-                                ) : (
-                                    <>
-                                        {rates.gold && Object.entries(rates.gold).map(([karat, data]) => (
-                                            <View key={karat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                                                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD {karat}</Text>
-                                                <View style={{ flexDirection: 'row', gap: 10 }}>
-                                                    <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                        <Text style={{ color: '#fff', fontSize: 12 }}>₹ {data.live}</Text>
-                                                    </View>
-                                                    <View style={{ backgroundColor: '#007bff', borderRadius: 4, padding: 6 }}>
-                                                        <Text style={{ color: '#fff', fontSize: 12 }}>₹ {data.open}</Text>
+                                        {loading ? (
+                                            <View style={{ padding: 20 }}>
+                                                <Text style={{ fontSize: 14, color: '#888', textAlign: 'center' }}>Loading rates...</Text>
+                                            </View>
+                                        ) : (
+                                            <>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5, marginTop: 10 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14, marginTop: 25 }}>GOLD 24 (MCX)</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                textAlign: 'center', 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 17, 
+                                                                fontWeight: 'bold', 
+                                                                marginBottom: 5 
+                                                            }}>
+                                                                USD
+                                                            </Text>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.gold?.["24K (MCX)"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                textAlign: 'center', 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 17, 
+                                                                fontWeight: 'bold', 
+                                                                marginBottom: 5 
+                                                            }}>
+                                                                INR
+                                                            </Text>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.gold?.["24K (MCX)"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
                                                     </View>
                                                 </View>
-                                            </View>
-                                        ))}
 
-                                        {rates.silver && Object.entries(rates.silver).map(([karat, data]) => (
-                                            <View key={karat} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                                                <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>{karat}</Text>
-                                                <View style={{ flexDirection: 'row', gap: 10 }}>
-                                                    <View style={{ backgroundColor: '#007bff', borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                        <Text style={{ color: '#fff', fontSize: 12 }}>₹ {data.live}</Text>
-                                                    </View>
-                                                    <View style={{ backgroundColor: '#007bff', borderRadius: 4, padding: 6 }}>
-                                                        <Text style={{ color: '#fff', fontSize: 12 }}>₹ {data.open}</Text>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24K</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.gold?.["24K"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.gold?.["24K"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
                                                     </View>
                                                 </View>
-                                            </View>
-                                        ))}
 
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 22K</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.gold?.["22K"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.gold?.["22K"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
 
-                                    </>
-                                )} */}
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 20K</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.gold?.["20K"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.gold?.["20K"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
 
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5, marginTop: 10 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14, marginTop: 25 }}>GOLD 24 (MCX)</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>USD</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["24K (MCX)"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', textAlign: 'center', letterSpacing: 1, fontSize: 17, fontWeight: 'bold', marginBottom: 5 }}>INR</Text>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["24K (MCX)"].open : ""}`}</Text>
-                                        </View>
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 18K</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.gold?.["18K"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.gold?.["18K"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER (MCX)</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.silver?.["Silver (MCX)"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.silver?.["Silver (MCX)"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+                                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER</Text>
+                                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 80 
+                                                            }}>
+                                                                {`$ ${rates?.silver?.["Silver"]?.live || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                        <View style={{ borderRadius: 4, padding: 6 }}>
+                                                            <Text style={{ 
+                                                                color: '#000', 
+                                                                backgroundColor: '#fff', 
+                                                                borderWidth: 1, 
+                                                                borderColor: '#aaa', 
+                                                                padding: 5, 
+                                                                letterSpacing: 1, 
+                                                                fontSize: 14, 
+                                                                fontWeight: 'bold', 
+                                                                width: 100 
+                                                            }}>
+                                                                {`₹ ${rates?.silver?.["Silver"]?.open || ""}`}
+                                                            </Text>
+                                                        </View>
+                                                    </View>
+                                                </View>
+
+                                                <View style={{ backgroundColor: '#fff', padding: 10, opacity: goldLoading ? 0.9 : 1, marginTop: 10 }}>
+                                                    <Text style={{ backgroundColor: '#fff', fontSize: 12, marginBottom: 4 }}>* All rates of Gold and Silver are from third party platform(API).</Text>
+                                                    <Text style={{ backgroundColor: '#fff', fontSize: 12 }}>* Gold and Silver rates are exclusive of taxes (import duty, GST, etc.).</Text>
+                                                </View>
+                                            </>
+                                        )}
                                     </View>
                                 </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24K</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["24K"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["24K"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 22K</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["22K"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["22K"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 20K</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["20K"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["20K"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 18K</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.gold["18K"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.gold["18K"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER (MCX)</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.silver["Silver (MCX)"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.silver["Silver (MCX)"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-                                    <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER</Text>
-                                    <View style={{ flexDirection: 'row', gap: 10 }}>
-                                        <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 80 }}>{`$ ${rates ? rates?.silver["Silver"].live : ""}`}</Text>
-                                        </View>
-                                        <View style={{ borderRadius: 4, padding: 6 }}>
-                                            <Text style={{ color: '#000', backgroundColor: '#fff', borderWidth: 1, borderColor: '#aaa', padding: 5, letterSpacing: 1, fontSize: 14, fontWeight: 'bold', width: 100 }}>{`₹ ${rates ? rates?.silver["Silver"].open : ""}`}</Text>
-                                        </View>
-                                    </View>
-                                </View>
-
-
-
-                            </View>
-                            <View style={{ backgroundColor: '#fff', padding: 10 }}>
-                                <Text style={{ backgroundColor: '#fff', fontSize: 12 }}>* ALl rates of Gold and Silver are  from third party platform(API).</Text>
-                                <Text style={{ backgroundColor: '#fff', fontSize: 12 }}>⁠* Gold and Silver rates are exclusive of taxes ( import duty, GST , etc.).</Text>
-                            </View>
-                        </ImageBackground>
-
-
-
+                            </ImageBackground>
+                        </View>
                     </View>
                 </SafeAreaView>
             </Modal>
@@ -765,6 +952,34 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 };
 
 const styles = StyleSheet.create({
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 1000,
+    },
+    loadingContent: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 10,
+        alignItems: 'center',
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.9,
+        shadowRadius: 3.84,
+    },
+    contentContainer: {
+        flex: 1,
+    },
+    contentBlurred: {
+        opacity: 0.9,
+    },
     modalOverlay: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.4)",
