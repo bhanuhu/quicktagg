@@ -31,9 +31,21 @@ const CustomerList = (props) => {
   };
 
   React.useEffect(() => {
+    // Handle refresh when navigating back from CustomerForm
+    const unsubscribe = props.navigation.addListener('focus', () => {
+      if (props.route.params?.shouldRefresh) {
+        fetchCustomers();
+        // Clear the parameter to prevent unnecessary refreshes
+        props.navigation.setParams({ shouldRefresh: false });
+      }
+    });
+
+    // Initial data load
     fetchCustomers();
 
-  }, [search, props]);
+    // Cleanup subscription
+    return unsubscribe;
+  }, [search, props.navigation, props.route.params]);
 
   const fetchCustomers = () => {
     try {
@@ -168,7 +180,8 @@ const CustomerForm = (props) => {
     { label: "Female", value: "Female" },
   ]);
 
-  const [param, setparam] = useState({
+  // Initial form state
+  const initialFormState = {
     customer_id: "0",
     address: "",
     email: "",
@@ -183,7 +196,9 @@ const CustomerForm = (props) => {
     profession: "",
     ref_id: "",
     staff_id: "",
-  });
+  };
+
+  const [param, setparam] = useState(initialFormState);
 
   console.log(isRegistered)
 
@@ -271,10 +286,13 @@ const CustomerForm = (props) => {
         }
       });
     }
+    else {
+      setparam(initialFormState)
+    }
 
   }, [customer_id]);
 
-
+ 
   return (
     <ImageBackground
       style={MyStyles.container}
@@ -414,41 +432,39 @@ const CustomerForm = (props) => {
                   // return;
                   try {
                     setSubmiting(true);
-                    await checkMobile(param.mobile)
+                    await checkMobile(param.mobile);
                     if (!isRegistered) {
-                      postRequest("masters/customer/insert", param, userToken).then(
-                        (resp) => {
-                          console.log(`inserted data response -> ${JSON.stringify(resp)}`)
-                          if (resp.status === 200) {
-                            setLoading(false);
-                            setparam({
-                              ...param,
-                              customer_id: "0",
-                              address: "",
-                              email: "",
-                              full_name: "",
-                              gender: "",
-                              mobile: "",
-                              area_id: "",
-                              category_id: "",
-                              doa: "",
-                              dob: "",
-                              sp_bdy: "",
-                              profession: "",
-                              ref_id: "",
-                              staff_id: "",
-                            });
-
-                            props.navigation.navigate("CustomerList");
+                      const resp = await postRequest("masters/customer/insert", param, userToken);
+                      console.log(`inserted data response -> ${JSON.stringify(resp)}`);
+                      console.log(`inserted data param -> ${JSON.stringify(param)}`);
+                      if (resp.status === 200) {
+                        setLoading(false);
+                        // Reset form and navigate
+                        // Navigate back to CustomerList with refresh flag
+                        props.navigation.navigate(
+                          'CustomerList', 
+                          { 
+                            shouldRefresh: true,
+                            screen: 'CustomerList' 
                           }
-
-                        }
-                      );
+                        );
+                      }
                     } else {
-                      Alert.alert(
-
-                        "Oops! \nThis mobile number is exist!"
-                      );
+                      const resp = await postRequest("masters/customer/insert", param, userToken);
+                      console.log(`updated data respons -> ${(resp)}`);
+                      console.log(`updated data param -> ${JSON.stringify(param)}`);
+                      if (resp.status === 200) {
+                        setLoading(false);
+                        // Reset form and navigate
+                        // Navigate back to CustomerList with refresh flag
+                        props.navigation.navigate(
+                          'CustomerList', 
+                          { 
+                            shouldRefresh: true,
+                            screen: 'CustomerList' 
+                          }
+                        );
+                      }
                     }
 
                   } catch (error) {
@@ -456,6 +472,7 @@ const CustomerForm = (props) => {
                     console.log(`catch errorr ->`, error)
                   } finally {
                     setSubmiting(false)
+                    setparam(initialFormState)
                   }
 
                 }}

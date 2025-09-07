@@ -143,6 +143,7 @@ const Stock = (props) => {
           <Text style={{ color: "#FFF", fontWeight: 'bold' }}>Live</Text>
         </TouchableOpacity>
       </View>
+      {filteredData?.length > 0 ? (
       <FlatList
         data={filteredData}
         initialNumToRender={10}
@@ -213,7 +214,9 @@ const Stock = (props) => {
           </View>
         )}
         keyExtractor={(item, index) => index.toString()}
-      />
+      />):(
+        <Text style={{ textAlign: "center"}}>No records found</Text>
+      )}
     </View>
   );
 };

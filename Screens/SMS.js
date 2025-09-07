@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Alert, ImageBackground, StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Button, Card, Checkbox, IconButton, Text, TextInput, } from "react-native-paper";
-import CustomHeader from "../Components/CustomHeader";
 import MyStyles from "../Styles/MyStyles";
 import { postRequest } from "../Services/RequestServices";
 import Loading from "../Components/Loading";

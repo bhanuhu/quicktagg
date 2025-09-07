@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,   useCallback } from "react";
 import { SafeAreaView, StatusBar, View, TouchableOpacity } from "react-native";
 import { IconButton, Text, Menu, Badge } from "react-native-paper";
 import MyStyles from "../Styles/MyStyles";
@@ -8,61 +8,35 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 
 const CustomHeader = (props) => {
-  const { userToken, branchId, search } = props.route.params;
-  const [param, setparam] = useState({
+  const { userToken, branchId, search, refreshKey, onRefresh, notifications } = props;
+  const [param, setParam] = useState({
     from_date: moment().subtract(7, 'days').format('YYYY-MM-DD'),
     to_date: moment().format('YYYY-MM-DD'),
   });
   const { signOut } = React.useContext(AuthContext);
   const [dotsVisible, setDotsVisible] = React.useState(false);
-  const [notifications, setNotifications] = React.useState(0);
   const [branchType, setBranchType] = useState(null);
 
+  // Fetch branch type on mount
+  const fetchBranchType = useCallback(async () => {
+    try {
+      const branchResp = await postRequest("masters/branch/preview", { branch_id: branchId }, userToken);
+      if (branchResp?.branch_type) {
+        setBranchType(branchResp.branch_type);
+        await AsyncStorage.setItem('branchType', branchResp.branch_type);
+      }
+    } catch (error) {
+      console.error('Error fetching branch type:', error);
+    }
+  }, [branchId, userToken]);
 
   useEffect(() => {
-    getBranchTypeAndFetchNotifications()
-  }, []);
+    fetchBranchType();
+  }, [fetchBranchType]);
 
-  const getBranchTypeAndFetchNotifications = async () => {
-    try {
-      const storedBranchType = await AsyncStorage.getItem('branchType');
-      setBranchType(storedBranchType);
-
-      if (storedBranchType === "Jeweller") {
-        const resp = await postRequest(
-          "customervisit/check_today_notificaton",
-          { branch_id: branchId },
-          userToken
-        );
-
-        console.log("✅ Jeweller resp:", resp);
-        if (resp.status == 200) {
-          setNotifications(resp.data[0]["check_appointment"]);
-        }
-      } else {
-        const resp = await postRequest(
-          "customervisit/due/service_notification",
-          {
-            branch_id: branchId,
-            from_date: param.from_date,
-            to_date: param.to_date,
-          },
-          userToken
-        );
-        console.log("✅ Service resp:", resp);
-        if (resp.status == 200) {
-          setNotifications(resp.data[0]?.due_count || 0);
-        }
-      }
-    } catch (err) {
-      console.log("❌ Error fetching notifications:", err?.message, err);
-    }
-  };
-
-  // ✅ Ensure First Click Opens Menu Properly
+  // Menu visibility handlers
   const toggleDotsMenu = () => {
-    setDotsVisible(false); // Close First to Reset
-    setTimeout(() => setDotsVisible(true), 50); // Small Delay to Ensure Opening
+    setDotsVisible(prev => !prev);
   };
 
   const closeDotsMenu = () => setDotsVisible(false);
@@ -70,15 +44,20 @@ const CustomHeader = (props) => {
   // ✅ Navigate & Close Dropdown
   const handleNavigate = (screen) => {
     closeDotsMenu();
+    if (screen === 'Home' && typeof onRefresh === 'function') {
+      onRefresh();
+    }
     props.navigation.navigate(screen);
   };
 
+
   return (
     <>
-      {/* ✅ Set Status Bar Color */}
+    {console.log("branch type->", notifications)}
+      {/* Status Bar */}
       <StatusBar
-        backgroundColor={MyStyles.primaryColor.backgroundColor} // For Android
-        barStyle="light-content" // Options: "light-content" (white icons) or "dark-content" (black icons)
+        backgroundColor={MyStyles.primaryColor.backgroundColor}
+        barStyle="light-content"
       />
 
       <SafeAreaView

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, ImageBackground, ScrollView, Alert, Image, Card, FlatList, } from "react-native";
 import { Button, Subheading, TouchableRipple, List, IconButton,Text } from "react-native-paper";
-import CustomHeader from "../../Components/CustomHeader";
-import ImageUpload from "../../Components/ImageUpload";
 import { postRequest } from "../../Services/RequestServices";
 import MultipleImages from "../../Components/MultipleImages";
 import MyStyles from "../../Styles/MyStyles";

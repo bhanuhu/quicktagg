@@ -22,13 +22,13 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         "extra_text": "",
         "contact_us": "",
         "mobiles": [],
-        "bb_id":null,
+        "bb_id": null,
     });
 
     const [newContact, setNewContact] = useState("");
     const [mobile, setMobile] = useState([]);
     const [image, setImage] = React.useState(require("../assets/upload.png"));
-
+    const [count, setCount] = useState(0);
     const [isRateModalVisible, setRateModalVisible] = useState(false);
     const [rates, setRates] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 200;
 
     const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
 
@@ -177,28 +177,32 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         }
     };
 
-   
-    
+
+
     const [logo, setLogo] = useState(null);
     const openDrawer = () => setDrawerVisible(true);
     const closeDrawer = () => setDrawerVisible(false);
 
     const closeRateModal = () => setRateModalVisible(false);
-    
+
     const handleSubmit = async () => {
-        console.log(userToken)  
-            const formData = new FormData();
-            formData.append("message", param.message);
+        if (loading) return; // Prevent multiple submissions
+        
+        console.log(userToken)
+        setLoading(true)
+        setModalVisible(false)
+        const formData = new FormData();
+        formData.append("message", param.message);
         formData.append("extra_text", param.extra_text);
         formData.append("contact_us", param.contact_us);
         formData.append("mobiles", param.mobiles);
         formData.append("bb_id", param.bb_id);
-          
-            if (param.file) {
-                formData.append("file", param.file);
-            }
-            
-      
+
+        if (param.file) {
+            formData.append("file", param.file);
+        }
+
+
         try {
             const response = await axios.post(
                 serviceUrl + "customervisit/whatsapp/bulk/message",
@@ -211,17 +215,33 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                     },
                 }
             );
+            console.log("Whatsapp response", response)
             if (response.status === 200) {
+                setDrawerVisible(false);
+                setParam({
+                    file: null,
+                    message: "",
+                    extra_text: "",
+                    contact_us: "",
+                    mobiles: [],
+                    bb_id: null
+                });
+                setSelectedCustomers([]);
+                setCount(0);
+
                 setgridData([...gridData, response.data]);
             } else {
                 Alert.alert(
                     "Error!",
                     "Oops! \nSeems like we run into some Server Error"
                 );
+
             }
         } catch (error) {
             console.error('Error sending WhatsApp message:', error);
+
         }
+        setLoading(false)
     };
 
     // Fetch customers
@@ -251,7 +271,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     }
 
     const fetchImage = () => {
-        postRequest("customervisit/get_branch_logo", { }, userToken).then((data) => {
+        postRequest("customervisit/get_branch_logo", {}, userToken).then((data) => {
             setLoading(true);
             setImage({ uri: `${logoUrl}${data.data[0].logo}` });  // Wrap URL in an object
             setLoading(false);
@@ -259,7 +279,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
     };
     React.useEffect(() => {
         fetchImage();
-    }, []); 
+    }, []);
     const handleSearch = (text) => {
         setSearchText(text);
 
@@ -279,14 +299,19 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         setFilteredCustomers(filtered);
     };
 
+    useEffect(() => {
+        Modal;
+    }, [loading]);
 
-
+    // Select/deselect one
     // Select/deselect one
     const toggleCustomer = (id) => {
         if (selectedCustomers.includes(id)) {
             setSelectedCustomers(selectedCustomers.filter((item) => item !== id));
+            setCount(prev => prev - 1);  // Decrease count when deselecting
         } else {
             setSelectedCustomers([...selectedCustomers, id]);
+            setCount(prev => prev + 1);  // Increase count when selecting
         }
     };
 
@@ -300,12 +325,14 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
             setSelectedCustomers(prev =>
                 prev.filter(id => !currentCustomerIds.includes(id))
             );
+            setCount(0)
         } else {
             // Select only current page (without duplication)
             setSelectedCustomers(prev => [
                 ...prev,
                 ...currentCustomerIds.filter(id => !prev.includes(id))
             ]);
+            setCount(currentCustomerIds.length)
         }
     };
 
@@ -342,29 +369,29 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 
                     </View>
                 </TouchableOpacity>
-                <TouchableOpacity 
-    onPress={openRateModal} 
-    style={[styles.promoteContainer, { justifyContent: 'center', alignItems: 'center' }]}
->
-    <View style={[styles.priceBox, { 
-        flexDirection: 'row', 
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%'
-    }]}>
-        <Image
-            source={require('../assets/coins.png')}
-            style={{
-                width: 50,
-                height: 50,
-                marginRight: 8,
-            }}
-        />
-        <Text style={styles.goldLabel}> 
-            Gold Price
-        </Text>
-    </View>
-</TouchableOpacity>
+                <TouchableOpacity
+                    onPress={openRateModal}
+                    style={[styles.promoteContainer, { justifyContent: 'center', alignItems: 'center' }]}
+                >
+                    <View style={[styles.priceBox, {
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%'
+                    }]}>
+                        <Image
+                            source={require('../assets/coins.png')}
+                            style={{
+                                width: 50,
+                                height: 50,
+                                marginRight: 8,
+                            }}
+                        />
+                        <Text style={styles.goldLabel}>
+                            Gold Price
+                        </Text>
+                    </View>
+                </TouchableOpacity>
 
 
             </View>
@@ -374,6 +401,8 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                 animationType="slide"
                 transparent
                 onRequestClose={closeDrawer}
+                disabled={loading}
+                style={{ opacity: loading ? 0 : 1 }}
             >
 
                 <SafeAreaView style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)' }}>
@@ -397,7 +426,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                     {/* Clickable Input */}
                                     <TouchableOpacity onPress={openModal}>
                                         <TextInput
-                                            placeholder="Select Customers"
+                                            placeholder={`Select Customers (${count})`}
                                             value={
                                                 selectedCustomers.length > 0
                                                     ? `Customers    (${selectedCustomers.length})`
@@ -405,7 +434,9 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                             }
                                             editable={false}
                                             pointerEvents="none"
+                                            disabled={loading}
                                             style={styles.searchInput}
+                                            onChange={() => setCount(selectedCustomers.length)}
                                         />
                                         <Image
                                             source={require('../assets/mail.png')}
@@ -497,14 +528,14 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                             .filter(c => selectedCustomers.includes(c.customer_id))
                                                             .map(c => c.mobile)
                                                             .join(",");
-                                                            
-                                                        
+
+
                                                         setParam(prev => ({
                                                             ...prev,
                                                             bb_id: parseInt(branchId),
-                                                             mobiles:selectedNames
+                                                            mobiles: selectedNames
                                                         }));
-                                                        console.log(selectedNames,"selectedNames")
+                                                        console.log(selectedNames, "selectedNames")
                                                         setModalVisible(false);
                                                         setSelectedCustomers([])
                                                     }}
@@ -533,10 +564,10 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                 <Text style={styles.counter}>{param.message.length}/200</Text>
 
                                 {/* Contact On */}
-                                <View style={{ flexDirection: 'row' }}>
+                                <View style={{ flexDirection: 'row', marginVertical: 8 }}>
                                     <Text style={styles.label}>Kindly contact us </Text>
                                     <TextInput
-                                        style={{ borderBottomColor: '#333', width: 100, height: 35 }}
+                                        style={{ borderBottomColor: '#333', width: 100, height: 35, marginTop: 2 }}
                                         placeholder="Type here..."
                                         value={param.contact_us}
                                         keyboardType="numeric"
@@ -579,9 +610,17 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                         }}
                                     />
 
-                                    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                                        <Text style={styles.submitText}>Submit</Text>
-                                    </TouchableOpacity>
+                                    <TouchableOpacity 
+                                        style={[styles.submitButton, loading && { opacity: 0.6 }]} 
+                                        onPress={handleSubmit}
+                                        disabled={loading}
+                                    >
+                                        {loading ? (
+                                            <ActivityIndicator color="#fff" />
+                                        ) : (
+                                            <Text style={styles.submitText}>Submit</Text>
+                                        )}
+\                                    </TouchableOpacity>
                                 </View>
                             </ScrollView>
 
@@ -603,18 +642,18 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                         {/* Close Button Centered */}
                         <View style={styles.closeBar}>
                             <View style={{ flex: 1 }} />
-                            <TouchableOpacity 
-                                onPress={closeRateModal} 
-                                style={{ 
-                                    position: 'absolute', 
-                                    top: -60, 
-                                    backgroundColor: '#fff', 
-                                    borderRadius: 50, 
-                                    padding: 5, 
-                                    width: 30, 
-                                    height: 30, 
-                                    justifyContent: 'center', 
-                                    alignItems: 'center' 
+                            <TouchableOpacity
+                                onPress={closeRateModal}
+                                style={{
+                                    position: 'absolute',
+                                    top: -60,
+                                    backgroundColor: '#fff',
+                                    borderRadius: 50,
+                                    padding: 5,
+                                    width: 30,
+                                    height: 30,
+                                    justifyContent: 'center',
+                                    alignItems: 'center'
                                 }}
                             >
                                 <Icon name="close" size={18} color="#333" />
@@ -622,8 +661,8 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                             <View style={{ flex: 1 }} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <ImageBackground 
-                                source={require("../assets/login-bg.jpg")} 
+                            <ImageBackground
+                                source={require("../assets/login-bg.jpg")}
                                 style={{ width: '100%', height: '100%', paddingVertical: 0 }}
                                 imageStyle={{ borderRadius: 16 }}
                             >
@@ -643,9 +682,9 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                 <Text style={{ fontSize: 14, color: '#555', marginBottom: 16 }}>Today's Gold & Silver Prices *</Text>
                                             </View>
                                             <View>
-                                                <Image 
-                                                    source={require('../assets/coins.png')} 
-                                                    style={{ width: 75, height: 75, borderRadius: 5, marginRight: 10 }} 
+                                                <Image
+                                                    source={require('../assets/coins.png')}
+                                                    style={{ width: 75, height: 75, borderRadius: 5, marginRight: 10 }}
                                                 />
                                             </View>
                                         </View>
@@ -660,53 +699,53 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14, marginTop: 25 }}>GOLD 24 (MCX)</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                textAlign: 'center', 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 17, 
-                                                                fontWeight: 'bold', 
-                                                                marginBottom: 5 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                textAlign: 'center',
+                                                                letterSpacing: 1,
+                                                                fontSize: 17,
+                                                                fontWeight: 'bold',
+                                                                marginBottom: 5
                                                             }}>
                                                                 USD
                                                             </Text>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.gold?.["24K (MCX)"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                textAlign: 'center', 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 17, 
-                                                                fontWeight: 'bold', 
-                                                                marginBottom: 5 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                textAlign: 'center',
+                                                                letterSpacing: 1,
+                                                                fontSize: 17,
+                                                                fontWeight: 'bold',
+                                                                marginBottom: 5
                                                             }}>
                                                                 INR
                                                             </Text>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.gold?.["24K (MCX)"]?.open || ""}`}
                                                             </Text>
@@ -718,31 +757,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 24K</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.gold?.["24K"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.gold?.["24K"]?.open || ""}`}
                                                             </Text>
@@ -754,31 +793,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 22K</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.gold?.["22K"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.gold?.["22K"]?.open || ""}`}
                                                             </Text>
@@ -790,31 +829,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 20K</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.gold?.["20K"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.gold?.["20K"]?.open || ""}`}
                                                             </Text>
@@ -826,31 +865,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>GOLD 18K</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.gold?.["18K"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.gold?.["18K"]?.open || ""}`}
                                                             </Text>
@@ -862,31 +901,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER (MCX)</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.silver?.["Silver (MCX)"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.silver?.["Silver (MCX)"]?.open || ""}`}
                                                             </Text>
@@ -898,31 +937,31 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                                     <Text style={{ flex: 1, fontWeight: 'bold', fontSize: 14 }}>SILVER</Text>
                                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                                         <View style={{ borderRadius: 4, padding: 6, marginRight: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 80 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`$ ${rates?.silver?.["Silver"]?.live || ""}`}
                                                             </Text>
                                                         </View>
                                                         <View style={{ borderRadius: 4, padding: 6 }}>
-                                                            <Text style={{ 
-                                                                color: '#000', 
-                                                                backgroundColor: '#fff', 
-                                                                borderWidth: 1, 
-                                                                borderColor: '#aaa', 
-                                                                padding: 5, 
-                                                                letterSpacing: 1, 
-                                                                fontSize: 14, 
-                                                                fontWeight: 'bold', 
-                                                                width: 100 
+                                                            <Text style={{
+                                                                color: '#000',
+                                                                backgroundColor: '#fff',
+                                                                borderWidth: 1,
+                                                                borderColor: '#aaa',
+                                                                padding: 5,
+                                                                letterSpacing: 1,
+                                                                fontSize: 14,
+                                                                fontWeight: 'bold',
+                                                                width: 120
                                                             }}>
                                                                 {`₹ ${rates?.silver?.["Silver"]?.open || ""}`}
                                                             </Text>
@@ -1087,7 +1126,8 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         alignItems: 'center',
         marginLeft: 6,
-        marginTop: -3
+        marginTop: -3,
+        minWidth: 100,
     },
     goldLabel: {
         fontSize: 20,
@@ -1151,7 +1191,8 @@ const styles = StyleSheet.create({
         padding: 8,
         width: '50%',
         fontWeight: 'bold',
-        fontSize: 16
+        fontSize: 16,
+        minWidth: 200
     },
     row: {
         flexDirection: 'row',

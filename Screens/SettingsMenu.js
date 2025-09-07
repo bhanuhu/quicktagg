@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { ImageBackground, ScrollView, View } from "react-native";
 import { List } from "react-native-paper";
-import CustomHeader from "../Components/CustomHeader";
 import MyStyles from "../Styles/MyStyles";
 
 const SettingsMenu = (props) => {

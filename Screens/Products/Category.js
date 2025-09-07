@@ -114,11 +114,12 @@ const CategoryList = (props) => {
                   icon="pencil"
                   iconColor="#aaa"
                   size={20}
-                  onPress={() =>
+                  onPress={() => {
                     props.navigation.navigate("CategoryForm", {
                       category_id: item.category_id,
-                    })
-                  }
+                      categoryData: item // Pass the complete category data
+                    });
+                  }}
                 />
                 <IconButton
                   icon="delete"
@@ -159,7 +160,7 @@ const CategoryList = (props) => {
 };
 
 const CategoryForm = (props) => {
-  const { userToken, category_id } = props.route.params;
+  const { userToken, category_id, categoryData } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [param, setparam] = useState({
     category_name: "",
@@ -170,7 +171,7 @@ const CategoryForm = (props) => {
     require("../../assets/upload.png")
   );
   const [Image, setImage] = React.useState(require("../../assets/upload.png"));
-
+  const [categories, setCategories] = useState([]);
   // For Filtered Data
   const [filteredData, setFilteredData] = useState([]);
 
@@ -180,15 +181,30 @@ const CategoryForm = (props) => {
     postRequest("masters/product/subcategory/search_list_category", { search: "" }, userToken).then((resp) => {
       if (resp.status == 200) {
         setSuggestionData(resp.data);
-      } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error"
-        );
       }
-      setLoading(false);
     });
-    if (category_id != 0) {
+    
+    if (categoryData) {
+      // If we have category data passed from CategoryList, use it
+      setparam({
+        category_name: categoryData.category_name,
+        image_path: categoryData.image_path,
+        banner_path: categoryData.banner_path,
+        category_id: categoryData.category_id,
+        is_active: categoryData.is_active
+      });
+      
+      // Set images if they exist
+      if (categoryData.image_path) {
+        setImage({ uri: `${categoryData.url_image.replace("BranchCategory/", "")}CustomerUploads/${categoryData.image_path}` });
+      }
+      if (categoryData.banner_path) {
+        setBanner({ uri: `${categoryData.url_banner}${categoryData.banner_path}` });
+      }
+      
+      setLoading(false);
+    } else if (category_id) {
+      // Otherwise, fetch the data if we only have category_id
       postRequest("masters/product/category/preview", { category_id: category_id }, userToken).then((resp) => {
         if (resp.status == 200) {
           param.category_id = resp.data.category_id;
@@ -255,6 +271,7 @@ const CategoryForm = (props) => {
             <TextInput
               {...props}
               mode="outlined"
+              disabled
               placeholder="Category Name"
               style={{
                 backgroundColor: "rgba(0,0,0,0)",
@@ -266,7 +283,7 @@ const CategoryForm = (props) => {
         <View style={[MyStyles.row, { justifyContent: "space-evenly" }]}>
           <ImageUpload
             label="Choose Image :"
-            source={Image}
+            source={!Image ? { uri: `${categoryData.url_image.replace("BranchCategory/", "")}CustomerUploads/${categoryData.image_path}` } : Image}
             onClearImage={() => {
               setImage({ uri: "" });
               setparam({

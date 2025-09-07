@@ -40,9 +40,9 @@ const Service = (props) => {
           return griddata || [];
         }
         
-        const searchTerm = search.toLowerCase().trim();
+        const searchTerm = search?.toLowerCase().trim();
         
-        const result = griddata.filter((item) => {
+        const result = griddata?.filter((item) => {
           if (!item) return false;
           
           // Check each field for the search term
@@ -58,7 +58,7 @@ const Service = (props) => {
             { name: 'next_service', value: moment(item.next_service).format('YYYY-MM-DD') },
           ];
           
-          const hasMatch = fieldsToSearch.some(({ name, value }) => {
+          const hasMatch = fieldsToSearch?.some(({ name, value }) => {
             if (!value) return false;
             const strValue = String(value).toLowerCase();
             const match = strValue.includes(searchTerm);
@@ -74,7 +74,7 @@ const Service = (props) => {
         return result;
       }, [griddata, search]);
 
-    const filteredItems = filteredData.filter(item => {
+    const filteredItems = filteredData?.filter(item => {
         const name = item.product_name?.trim();
         if (!name || uniqueNames.has(name)) return false;
         uniqueNames.add(name);
@@ -84,13 +84,13 @@ const Service = (props) => {
     // console.log(`original data -> ${JSON.stringify(filteredItems)}`)
 
     // Picker items for unique product names
-    const pickerItems = filteredItems.map(item => ({
+    const pickerItems = filteredItems?.map(item => ({
         label: item.product_name,
         value: item.product_name,
     }));
 
     // Collect all interests from filtered items
-    const allInterests = filteredItems.map(item => ({
+    const allInterests = filteredItems?.map(item => ({
         label: item.interest,
         value: item.interest,
     }));
@@ -172,7 +172,6 @@ const Service = (props) => {
 
     return (
         <View style={MyStyles.container}>
-            <Loading isloading={loading} />
 
             <Portal>
                 <Modal
@@ -267,11 +266,11 @@ const Service = (props) => {
                 </View>
             </View> */}
 
-
+{filteredData?.length > 0 ? (
             <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }>
-                {filteredData.map((item, index) => (
+                {filteredData?.map((item, index) => (
                     <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
                         <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <View style={{ margin: 6, flexDirection: 'row' }}>
@@ -411,7 +410,9 @@ const Service = (props) => {
 
                     </View>
                 ))}
-            </ScrollView>
+            </ScrollView>):(
+                <Text style={{ textAlign: 'center' }}>No records found</Text>
+            )}
         </View>
     );
 };

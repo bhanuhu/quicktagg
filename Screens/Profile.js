@@ -44,6 +44,9 @@ import { CapitalizeName } from '../utils/CapitalizeName';
 import { useNavigation } from '@react-navigation/native';
 import MedalIcon from 'react-native-vector-icons/FontAwesome6';
 import DropDown from '../Components/DropDown';
+import Share from 'react-native-share';
+import RNFS from 'react-native-fs';
+
 const Profile = (props) => {
   const Tab = createMaterialTopTabNavigator();
   const { userToken, customer_id, customer_mobile, missCallUser, branchId } = props.route.params;
@@ -278,16 +281,15 @@ const Profile = (props) => {
           mode='outlined'
 
           uppercase={false}
-          style={{ borderRadius: 5 }}
-          labelStyle={{ color: "black" }}
+          style={{ borderRadius: 5, alignItems: "center", justifyContent: "center" }}
+          labelStyle={{ color: "black" , alignItems: "center"}}
           color='black'
           onPress={() =>
             props.navigation.navigate("CustomerVoucherList", {
               customer_id: param.customer_id,
               search: ""
             })
-          }>
-Redeem        </Button>
+          }>Redeem</Button>
       </View>
 
 
@@ -377,7 +379,7 @@ const Wishlist = ({ userToken, customer_id }) => {
       if (resp.status == 200) {
 
         const filteredData = resp.data.filter(
-          item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "online"
+          item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
 
 
@@ -386,7 +388,7 @@ const Wishlist = ({ userToken, customer_id }) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 1"
         );
       }
       setLoading(false);
@@ -404,7 +406,7 @@ const Wishlist = ({ userToken, customer_id }) => {
       if (resp.status == 200) {
 
         const filteredData = resp.data.filter(
-          item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "online"
+          item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
 
 
@@ -413,7 +415,7 @@ const Wishlist = ({ userToken, customer_id }) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 2"
         );
       }
       setLoading(false);
@@ -567,7 +569,9 @@ const Uploaded = ({ userToken, customer_id }) => {
       if (resp.status == 200) {
         // console.log()
         const filteredData = resp.data.filter(
-          item => item.customer_id === customer_id && item.added_from == "Online"
+          item => item.customer_id === customer_id && (item.added_from == "Online" 
+            || item.added_from == "trial" || item.added_from == "exhibition"
+          )
         );
 
 
@@ -576,7 +580,7 @@ const Uploaded = ({ userToken, customer_id }) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 3"
         );
       }
       setLoading(false);
@@ -595,6 +599,7 @@ const Uploaded = ({ userToken, customer_id }) => {
         groups[dateKey] = [];
       }
       groups[dateKey].push(item);
+      console.log(`grouped uploaded -> ${JSON.stringify(groups)}`)
       return groups;
     }, {});
 
@@ -621,7 +626,7 @@ const Uploaded = ({ userToken, customer_id }) => {
               >
                 {groupedUploaded[dateKey].map((item, index) => (
                   <Card
-                    key={item.customer_id + index}
+                    key={item?.customer_id + index}
                     style={{
                       width: cardWidth,
                       margin: 5,
@@ -632,12 +637,12 @@ const Uploaded = ({ userToken, customer_id }) => {
                     onPress={() =>
                       navigation.navigate("ProfileProductsPreview", {
                         product_id: item.product_id,
-                        remarks: item.remarks
+                        item
                       })
                     }
                   >
                     <Image
-                      source={{ uri: item.url_image + item.image_path }}
+                      source={{ uri: item?.url_image + item?.image_path }}
                       style={{
                         width: '100%',
                         height: 120,
@@ -654,9 +659,9 @@ const Uploaded = ({ userToken, customer_id }) => {
                       alignItems: 'center'
                     }}>
                       <Text numberOfLines={1} style={{ color: "#333", fontWeight: 'bold' }}>
-                        {item.product_name.length < 13
-                          ? CapitalizeName(item.product_name)
-                          : `${CapitalizeName(item.product_name).substring(0, 10)}...`}
+                        {item?.product_name?.length < 13
+                          ? CapitalizeName(item?.product_name)
+                          : `${CapitalizeName(item?.product_name).substring(0, 10)}...`}
                       </Text>
 
                       <IconDot
@@ -665,10 +670,10 @@ const Uploaded = ({ userToken, customer_id }) => {
                         style={{
                           marginHorizontal: 2,
                           color: (
-                            item.updated_interest && item.updated_interest !== 'N/A'
-                              ? (item.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
-                              : item.interest && item.interest !== 'N/A'
-                                ? (item.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                            item?.updated_interest && item?.updated_interest !== 'N/A'
+                              ? (item?.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                              : item?.interest && item?.interest !== 'N/A'
+                                ? (item?.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
                                 : 'red'
                           ),
                           alignSelf: "center",
@@ -716,7 +721,7 @@ const Exhibition = ({ userToken, customer_id }) => {
           );
           setExhibition(filteredData);
         } else {
-          Alert.alert("Error !", "Oops! \nSeems like we ran into some Server Error");
+          Alert.alert("Error !", "Oops! \nSeems like we ran into some Server Erroraa");
         }
       })
       .catch((err) => console.error("Exhibition browse_cart error:", err));
@@ -903,17 +908,23 @@ const VideoCallRequest = ({ userToken, customer_id, customer_mobile }) => {
       { customer_id: customer_id },
       userToken
     ).then((resp) => {
-      if (resp.status == 200) {
-        let param = [];
-        param = resp.data[0].vcalls;
-        // console.log(param)
-        setvcallslist(param);
+      console.log('API Response:',resp); // Log full response
+      
+      if (resp && resp.status === 200 && resp.data && resp.data[0] && resp.data[0].vcalls) {
+        setvcallslist(resp.data[0].vcalls);
       } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error"
-        );
+        console.log('Error details:', {
+          hasResponse: !!resp,
+          status: resp?.status,
+          hasData: !!resp?.data,
+          dataLength: resp?.data?.length,
+          hasVcalls: !!resp?.data?.[0]?.vcalls
+        });
+        
       }
+      setLoading(false);
+    }).catch(error => {
+      console.error('API Error:', error);
       setLoading(false);
     });
   };
@@ -1390,16 +1401,17 @@ const CallRequest = ({ userToken, customer_id, customer_mobile, miss_call_user }
       { customer_id: customer_id },
       userToken
     ).then((resp) => {
+      console.log(`miss calls -> ${JSON.stringify(resp)}`)
       if (resp.status == 200) {
         let param = [];
         param = resp.data[0].mcalls;
+        console.log(`miss calls -> `)
         setmisscallslist(param);
+        console.log(`miss calls -> ${JSON.stringify(param)}`)
+
 
       } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error"
-        );
+        console.log(`miss calls error-> ${JSON.stringify(resp)}`)
       }
       setLoading(false);
     });
@@ -1454,7 +1466,7 @@ const CallRequest = ({ userToken, customer_id, customer_mobile, miss_call_user }
                       {moment(item.date).format("DD-MM-YYYY")}
                     </Button>
                     <Text style={{ color: "green", marginLeft: 30, marginTop: 10, fontWeight: 'bold' }}>
-                      {moment(item.current_datetime.split("T")[0]).format("DD-MM-YYYY")}
+                      {moment(item?.current_datetime?.split("T")[0]).format("DD-MM-YYYY")}
                     </Text>
                   </View>
                   {item.status == "request" && (
@@ -1818,7 +1830,7 @@ const CustomerVoucherList = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 6"
         );
       }
       setLoading(false);
@@ -1929,6 +1941,9 @@ const ProfileProductsPreview = (props) => {
     let data = { product_id: product_id };
     if (data != 0) {
       postRequest("masters/product/preview", data, userToken).then((resp) => {
+        console.log(`remarks -> ${JSON.stringify(resp)}`)
+        console.log(`remarks -> ${data}`)
+
         if (resp.status == 200) {
           console.log(`remarks -> ${JSON.stringify(resp.data)}`)
           setparam({
@@ -1962,10 +1977,10 @@ const ProfileProductsPreview = (props) => {
 
         } else {
 
-          Alert.alert(
-            "Error !",
-            "Oops! \nSeems like we run into some Server Error"
-          );
+          // Alert.alert(
+          //   "Error !",
+          //   "Oops! \nSeems like we run into some Server Errora"
+          // );
         }
       });
     }
@@ -1982,9 +1997,9 @@ const ProfileProductsPreview = (props) => {
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {
-              param.product_name && (
+              param?.product_name && (
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                  {CapitalizeName(param.product_name)}
+                  {CapitalizeName(param?.product_name)}
                 </Text>
               )
             }
@@ -1992,10 +2007,10 @@ const ProfileProductsPreview = (props) => {
               name="medal"
               size={25}
               color={
-                item.updated_interest && item.updated_interest !== 'N/A'
-                  ? (item.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
-                  : item.interest && item.interest !== 'N/A'
-                    ? (item.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                item?.updated_interest && item?.updated_interest !== 'N/A'
+                  ? (item?.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                  : item?.interest && item?.interest !== 'N/A'
+                    ? (item?.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
                     : 'red'
               }
               style={{ transform: [{ rotate: '180deg' }] }}
@@ -2004,44 +2019,44 @@ const ProfileProductsPreview = (props) => {
 
           <View>
             {
-              item.subcategory_name && (
+              item?.subcategory_name && (
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                  {CapitalizeName(item.subcategory_name)}
+                  {CapitalizeName(item?.subcategory_name)}
                 </Text>
               )
 
             }
 
-            {item.appointment_date !== "N/A" && (
+            {item?.appointment_date !== "N/A" && (
               <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', backgroundColor: MyStyles.primaryColor.backgroundColor, borderRadius: 2, marginBottom: 10 }}>
                 <Text style={{ fontSize: 12, color: "#000" }}>
-                  {moment(item.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
                   {"\n"}
-                  {moment(item.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
                 </Text>
               </View>
             )}
           </View>
 
           {
-            param.product_code && (
+            param?.product_code && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{param.product_code}
+                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{param?.product_code}
               </Text>
             )
           }
 
           {
-            param.price && (
+            param?.price && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{param.price}/-{"  "}
+                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{param?.price}/-{"  "}
                 <Text
                   style={{
                     color: "red",
                     textDecorationLine: "line-through",
                   }}
                 >
-                  {param.price}/-
+                  {param?.price}/-
                 </Text>
               </Text>
             )
@@ -2066,17 +2081,17 @@ const ProfileProductsPreview = (props) => {
                 if (result) {
                   setLoading(true);
                   const options = {
-                    dialogTitle: param.product_name.toString(),
+                    dialogTitle: param?.product_name.toString(),
                     mimeType: "image/jpeg"
                   };
-                  FileSystem.downloadAsync(currentProduct.url + "" + currentProduct.image_path, FileSystem.cacheDirectory + currentProduct.image_path)
+                  FileSystem.downloadAsync(currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path)
                     .then(async ({ uri }) => {
                       // console.log(uri, "Pathof Image")
                       Sharing.shareAsync(uri, options);
                     })
                     .catch((error) => {
 
-                      console.error(error, "This is Error and Path is:" + currentProduct.url + "" + currentProduct.image_path, FileSystem.cacheDirectory + currentProduct.image_path);
+                      console.error(error, "This is Error and Path is:" + currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path);
                     });
                   setLoading(false);
                 }
@@ -2092,14 +2107,14 @@ const ProfileProductsPreview = (props) => {
                   <View key={index}>
                     <Image
                       source={{ uri: resp.url + "" + resp.image_path }}
-                      style={[{ height: '100%', width: "100%", borderRadius: 5 }]}
+                      style={[{ height: '100%', borderRadius: 5, resizeMode: 'contain' }]}
                     />
                   </View>
                 );
               })) :
               (<Image
                 source={require("../assets/upload.png")}
-                style={[{ height: '100%', width: "100%", borderRadius: 5 }]}
+                style={[{ height: '100%', borderRadius: 5 , objectFit: 'contain' }]}
               />)}
           </Swiper>
         </View>
@@ -2107,89 +2122,89 @@ const ProfileProductsPreview = (props) => {
           {
             param.available && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Availablity:</Text>{"   "}{param.available || '-'}
+                <Text style={{ color: 'gray' }}>Availablity:</Text>{"   "}{param?.available || '-'}
               </Text>
             )
           }
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {
-              item.added_from && (
+              item?.added_from && (
                 <Text style={{ fontSize: 15, marginTop: 10 }}>
-                  <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item.added_from) || '-'}
+                  <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item?.added_from) || '-'}
                 </Text>
               )
             }
 
             {
-              item.staff_name && (
+              item?.staff_name && (
                 <Text style={{ fontSize: 15, marginTop: 10 }}>
-                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item.staff_name) || '-'}
+                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item?.staff_name) || '-'}
                 </Text>
               )
             }
           </View>
 
           {
-            param.Metal && (
+            param?.Metal && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{param.Metal || '-'}
+                <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{param?.Metal || '-'}
               </Text>
             )
           }
 
           {
-            param.material && (
+            param?.material && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{param.material || '-'}
+                <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{param?.material || '-'}
               </Text>
             )
           }
 
 
           {
-            param.disable && (
+            param?.disable && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{param.disable || '-'}
+                <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{param?.disable || '-'}
               </Text>
             )
           }
 
           {
-            param.exhibition && (
+            param?.exhibition && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Exhibition:</Text>{"   "}{param.exhibition || '-'}
+                <Text style={{ color: 'gray' }}>Exhibition:</Text>{"   "}{param?.exhibition || '-'}
               </Text>
             )
           }
 
           {
-            param.weight && (
+            param?.weight && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{param.weight || '-'}
+                <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{param?.weight || '-'}
               </Text>
             )
           }
           {
-            param.size_length && (
+            param?.size_length && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{param.size_length || '-'}
-              </Text>
-            )
-          }
-
-          {
-            param.gender && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{param.gender || '-'}
+                <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{param?.size_length || '-'}
               </Text>
             )
           }
 
           {
-            param.product_code && (
+            param?.gender && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{param.product_code || '-'}
+                <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{param?.gender || '-'}
+              </Text>
+            )
+          }
+
+          {
+            param?.product_code && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{param?.product_code || '-'}
               </Text>
             )
           }
@@ -2219,7 +2234,7 @@ const ProfileProductsPreview = (props) => {
             </>
           )}
 
-          {remarks.length > 1 && (
+          {remarks?.length > 1 && (
             <Text
               style={{ color: "black", fontSize: 12, marginTop: 5 }}
               onPress={() => setActive(prev => !prev)}
@@ -2234,9 +2249,9 @@ const ProfileProductsPreview = (props) => {
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {
-              item.product_name && (
+              item?.product_name && (
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                  {CapitalizeName(item.product_name)}
+                  {CapitalizeName(item?.product_name)}
                 </Text>
               )
             }
@@ -2244,9 +2259,9 @@ const ProfileProductsPreview = (props) => {
               name="medal"
               size={25}
               color={
-                item.updated_interest && item.updated_interest !== 'N/A'
+                item?.updated_interest && item.updated_interest !== 'N/A'
                   ? (item.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
-                  : item.interest && item.interest !== 'N/A'
+                  : item?.interest && item.interest !== 'N/A'
                     ? (item.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
                     : 'red'
               }
@@ -2256,46 +2271,46 @@ const ProfileProductsPreview = (props) => {
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
             {
-              item.subcategory_name && (
+              item?.subcategory_name && (
                 <Text>
-                  {CapitalizeName(item.subcategory_name)}
+                  {CapitalizeName(item?.subcategory_name)}
                 </Text>
               )
 
             }
 
-            {item.appointment_date !== "N/A" && item.appointment_date != null && (
+            {item?.appointment_date !== "N/A" && item?.appointment_date != null && (
               <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, marginBottom: 10 }}>
                 <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
-                  {moment(item.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
                   {"\n"}
-                  {moment(item.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
                 </Text>
               </View>
             )}
           </View>
 
           {
-            item.product_code && (
+            item?.product_code && (
 
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{item.product_code}
+                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{item?.product_code}
               </Text>
 
             )
           }
 
           {
-            item.price && (
+            item?.price && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{item.price}/-{"  "}
+                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{item?.price}/-{"  "}
                 <Text
                   style={{
                     color: "red",
                     textDecorationLine: "line-through",
                   }}
                 >
-                  {item.price}/-
+                  {item?.price}/-
                 </Text>
               </Text>
             )
@@ -2314,75 +2329,99 @@ const ProfileProductsPreview = (props) => {
               backgroundColor: MyStyles.primaryColor.backgroundColor,
               alignSelf: 'flex-end'
             }}
-            onPress={() => {
-              Sharing.isAvailableAsync().then((result) => {
-                // console.log(result, "jsadhfjhsdfhjsdfhjs")
-                if (result) {
-                  setLoading(true);
-                  const options = {
-                    dialogTitle: item.product_name.toString(),
-                    mimeType: "image/jpeg"
-                  };
-                  FileSystem.downloadAsync(currentProduct.url + "" + currentProduct.image_path, FileSystem.cacheDirectory + currentProduct.image_path)
-                    .then(async ({ uri }) => {
-                      // console.log(uri, "Pathof Image")
-                      Sharing.shareAsync(uri, options);
-                    })
-                    .catch((error) => {
-
-                      console.error(error, "This is Error and Path is:" + currentProduct.url + "" + currentProduct.image_path, FileSystem.cacheDirectory + currentProduct.image_path);
-                    });
-                  setLoading(false);
+            onPress={async () => {
+              try {
+                if (!item?.url_image || !item?.image_path) {
+                  throw new Error('Image URL or path is missing');
                 }
-              });
+
+                setLoading(true);
+                
+                // Construct the full image URL
+                const imageUrl = `${item.url_image.replace(/\/+$/, '')}/${item.image_path.replace(/^\/+/, '')}`;
+                
+                // Create a temporary file path with a unique name
+                const fileName = `share_${Date.now()}.jpg`;
+                const fileUri = `${RNFS.CachesDirectoryPath}/${fileName}`;
+                
+                // Download the image
+                const response = await RNFS.downloadFile({
+                  fromUrl: imageUrl,
+                  toFile: fileUri,
+                }).promise;
+                
+                // Share the image
+                await Share.open({
+                  url: `file://${fileUri}`,
+                  type: 'image/jpeg',
+                  title: item.product_name || 'Share Image',
+                  failOnCancel: false,
+                });
+                
+                // Clean up the temporary file after a delay
+                setTimeout(() => {
+                  RNFS.unlink(fileUri).catch(console.warn);
+                }, 10000);
+                
+              } catch (error) {
+                if (error.message !== 'User did not share') {
+                  console.error('Sharing failed:', error);
+                  Alert.alert(
+                    'Error Sharing',
+                    'Could not share the image. Please try again.'
+                  );
+                }
+              } finally {
+                setLoading(false);
+              }
             }}
           />
           <View>
             <Image
-              source={{ uri: item.url_image + "" + item.image_path }}
-              style={[{ height: 200, width: "100%", borderRadius: 5 }]}
+              source={{ uri: item?.url_image + "" + item?.image_path }}
+              style={[{ height: "100%", width: "100%", borderRadius: 5 , resizeMode: 'contain' }]}
             />
           </View>
         </View>
         <View>
           {
-            item.available && (
+            item?.available && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Availablity:</Text>{"   "}{item.available || '-'}
+                <Text style={{ color: 'gray' }}>Availablity:</Text>{"   "}{item?.available || '-'}
               </Text>
             )
           }
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 50 }}>
             {
-              item.added_from && (
+              item?.added_from && (
                 <Text style={{ fontSize: 15, marginTop: 10, fontWeight: 'bold' }}>
-                  <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item.added_from) || '-'}
+                  <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item?.added_from) || '-'}
                 </Text>
               )
             }
 
             {
-              item.staff_name && (
+              item?.staff_name && (
                 <Text style={{ fontSize: 15, marginTop: 10, fontWeight: 'bold' }}>
-                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item.staff_name) || '-'}
+                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item?.staff_name) || '-'}
                 </Text>
               )
             }
           </View>
 
           {
-            item.Metal && (
+            item?.Metal && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{item.Metal || '-'}
+                <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{item?.Metal || '-'}
               </Text>
             )
           }
 
           {
-            item.material && (
+            item?.material && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{item.material || '-'}
+                <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{item?.material || '-'}
               </Text>
             )
           }
@@ -2391,50 +2430,50 @@ const ProfileProductsPreview = (props) => {
 
 
           {
-            item.disable && (
+            item?.disable && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{item.disable || '-'}
+                <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{item?.disable || '-'}
               </Text>
             )
           }
 
           {
-            item.exhibition && (
+            item?.exhibition && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Exhibition:</Text>{"   "}{item.exhibition || '-'}
+                <Text style={{ color: 'gray' }}>Exhibition:</Text>{"   "}{item?.exhibition || '-'}
               </Text>
             )
           }
 
           {
-            item.weight && (
+            item?.weight && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{item.weight || '-'}
+                <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{item?.weight || '-'}
               </Text>
             )
           }
 
           {
-            item.size_length && (
+            item?.size_length && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{item.size_length || '-'}
+                <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{item?.size_length || '-'}
               </Text>
             )
           }
 
           {
-            item.gender && (
+            item?.gender && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{item.gender || '-'}
+                <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{item?.gender || '-'}
               </Text>
 
             )
           }
 
           {
-            item.product_code && (
+            item?.product_code && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{item.product_code || '-'}
+                <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{item?.product_code || '-'}
               </Text>
             )
           }
@@ -2469,7 +2508,7 @@ const ProfileProductsPreview = (props) => {
             </>
           )}
 
-          {remarks.length > 1 && (
+          {remarks?.length > 1 && (
             <Text
               style={{ color: "black", fontSize: 12, marginTop: 5 }}
               onPress={() => setActive(prev => !prev)}
@@ -2705,7 +2744,7 @@ const CustomerRedeem = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 7"
         );
       }
     });
@@ -2841,6 +2880,7 @@ const CustomerRedeem = (props) => {
                         uppercase={false}
                         style={{ borderRadius: 5 }}
                         labelStyle={{ color: "black" }}
+                       
                       >
                         Redeem
                       </Button>
@@ -2915,7 +2955,7 @@ const CustomerPoints = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 8"
         );
       }
     });
@@ -2936,7 +2976,7 @@ const CustomerPoints = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 9"
         );
       }
     });
@@ -2957,7 +2997,7 @@ const CustomerPoints = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 10"
         );
       }
     });
@@ -2974,6 +3014,7 @@ const CustomerPoints = (props) => {
   //   }
 
   // };
+  const filteredData = griddata.filter((item) => item.points > 0);
 
   return (
 
@@ -2987,11 +3028,11 @@ const CustomerPoints = (props) => {
                 />
               }
             > */}
+            {console.log("filteredData",filteredData)}
       <FlatList
         style={{ marginVertical: 10 }}
-        data={griddata}
+        data={filteredData}
         renderItem={({ item, index }) => (
-
           <Card
             key={item.voucher_id}
             style={{
@@ -3082,7 +3123,7 @@ const CustomerPoints = (props) => {
                   </View>
                 </View>
                 <View>
-                  {item.active_flag === true && item.expire_flag === false && (
+                  { (
                     <Text style={{ borderWidth: 1, borderColor: '#aaa', paddingHorizontal: 20, paddingVertical: 5, fontSize: 16, fontWeight: 'bold' }}> {item.points}</Text>
                   )}
 
@@ -3171,7 +3212,7 @@ const PointForm = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 11"
         );
       }
     });
@@ -3311,7 +3352,7 @@ const ExtraPoints = (props) => {
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error"
+          "Oops! \nSeems like we run into some Server Error 12a"
         );
       }
     });

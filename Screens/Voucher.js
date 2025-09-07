@@ -20,7 +20,6 @@ import {
   TouchableRipple,
   List
 } from "react-native-paper";
-import CustomHeader from "../Components/CustomHeader";
 import DatePicker from "../Components/DatePicker";
 import DropDown from "../Components/DropDown";
 import ImageUpload from "../Components/ImageUpload";

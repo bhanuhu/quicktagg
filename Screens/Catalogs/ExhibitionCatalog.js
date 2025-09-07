@@ -22,7 +22,6 @@ import {
 import MyStyles from "../../Styles/MyStyles";
 import DropDown from "../../Components/DropDown";
 import MultipleImages from "../../Components/MultipleImages";
-import CustomHeader from "../../Components/CustomHeader";
 import SelectMultiple from "../../Components/SelectMultiple";
 import SelectCustomer from "../../Components/SelectCustomer";
 import DatePicker from "../../Components/DatePicker";

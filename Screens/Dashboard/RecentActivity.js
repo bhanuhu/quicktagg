@@ -33,11 +33,11 @@ const RecentActivity = (props) => {
 
   const renderItem = ({ item, index }) => {
     const iconSize = 18;
-    const dateTime = item.dateTime; // Given UTC time
+    const dateTime = item.datetime || item.dateTime; // Handle both cases for backward compatibility
 
-    // Format the date and time
-    const formattedDate = moment.utc(dateTime).format("DD-MM-YYYY");
-    const formattedTime = item.time;
+    // Format the time to show hours and minutes only
+    const formattedTime = moment.utc(dateTime).format('HH:mm');
+    const formattedDate = moment.utc(dateTime).format('DD-MM-YYYY');
     
     // Get today's date and compare
     const isToday = moment().isSame(moment.utc(dateTime), 'day');
@@ -47,11 +47,14 @@ const RecentActivity = (props) => {
     let dateTimeDisplay = '';
     
     if (isToday) {
-      dateTimeDisplay = `${formattedTime}`;
+      // For today: Show time (e.g., "16:30")
+      dateTimeDisplay = formattedTime;
     } else if (isCurrentWeek) {
-      dateTimeDisplay = moment.utc(dateTime).format('dddd'); // Show day of the week (e.g., Monday, Tuesday)
+      // For this week: Show full day name and time on two lines
+      dateTimeDisplay = `${formattedTime}\n${moment.utc(dateTime).format('dddd')}`;
     } else {
-      dateTimeDisplay = `${formattedTime}\n${formattedDate}`; // Show both time and date for older entries
+      // For older: Show date and time (e.g., "28/08/2025, 16:30")
+      dateTimeDisplay = `${formattedTime} ${formattedDate}`;
     }
 
     return (
@@ -77,6 +80,7 @@ const RecentActivity = (props) => {
         <View style={{ flex: 1, paddingHorizontal: 5 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
             <View>
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Text
                 onPress={() => {
                   props.navigation.navigate("Profile", {
@@ -91,16 +95,18 @@ const RecentActivity = (props) => {
 
               {item.type === "New Customer" && (
                 <Icon name="brightness-1" size={10} style={{ marginHorizontal: 5, color: "lightgreen" }} />
-              )}
+              )}</View>
 
               {/* Mobile Number & Icons */}
               <View style={{ flexDirection: "row", alignItems: "center", marginTop: 1 }}>
                 <Text style={{ fontSize: 13, fontWeight: "600", color: "#333", marginRight: 10 }}>{item.mobile}</Text>
-
+{console.log(item)}
                 {item.dob === "true" || item.doa === "true" ? <Icon name="cake" size={iconSize} style={{ marginHorizontal: 3, color: "gold" }} /> : null}
                 {item.missCall === "true" ? <Icon name="phone-missed" size={iconSize} style={{ marginHorizontal: 3 }} /> : null}
                 {item.vcall === "true" ? <Icon name="video" size={iconSize} style={{ marginHorizontal: 3 }} /> : null}
                 {item.wish === "true" ? <Icon name="heart" size={iconSize} style={{ marginHorizontal: 3, color: "red" }} /> : null}
+                {item.type === "Upload" ? <Icon name="upload" size={iconSize} style={{ marginHorizontal: 3, color: "green" }} /> : null}
+                {item.type === "Service" ? <Icon name="cog-outline" size={iconSize} style={{ marginHorizontal: 3, color: "blue" }} /> : null}
               </View>
 
               {/* Activity Type */}

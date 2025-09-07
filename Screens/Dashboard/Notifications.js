@@ -206,7 +206,8 @@ const Notifications = (props) => {
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {filteredData.map((item, index) => (
+        {!filteredServiceData.length > 0 ? (
+          filteredData.map((item, index) => (
           <View
             key={`notif-${index}`}
             style={{
@@ -330,7 +331,7 @@ const Notifications = (props) => {
               </Text>
             )}
           </View>
-        ))}
+        ))):null}
 
         {filteredServiceData.map((item, index) => (
           <View key={`service-${index}`} style={{ borderBottomWidth: 0.5, borderBottomColor: 'black', padding: 10 }}>

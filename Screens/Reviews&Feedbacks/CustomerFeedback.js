@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { View, FlatList, Alert, Linking } from "react-native";
 import { Text, Card, TouchableRipple, Avatar } from "react-native-paper";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import CustomHeader from "../../Components/CustomHeader";
 import MyStyles from "../../Styles/MyStyles";
 import { postRequest } from "../../Services/RequestServices";
 import moment from "moment";

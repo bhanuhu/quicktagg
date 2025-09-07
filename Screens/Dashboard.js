@@ -3,7 +3,6 @@ import { View, Text } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import CustomHeader from "../Components/CustomHeader";
 import MyStyles from "../Styles/MyStyles";
 import Wishlist from "./Dashboard/Wishlist";
 import TrialList from "./Dashboard/TrialList";

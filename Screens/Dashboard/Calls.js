@@ -154,6 +154,7 @@ const Calls = (props) => {
           <Text style={{ color: "#FFF", fontWeight: 'bold' }}>Live</Text>
         </TouchableOpacity>
       </View>
+      {filteredData?.length > 0 ? (
       <FlatList
         data={filteredData}
         initialNumToRender={10}
@@ -255,7 +256,9 @@ const Calls = (props) => {
           </View>
         )}
         keyExtractor={(item, index) => index.toString()}
-      />
+      />):(
+        <Text style={{ textAlign: 'center' }}>No records found</Text>
+      )}
     </View>
   );
 };

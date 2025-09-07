@@ -15,7 +15,6 @@ import {
   IconButton,
   Avatar,
 } from "react-native-paper";
-import CustomHeader from "../../Components/CustomHeader";
 import ImageUpload from "../../Components/ImageUpload";
 import MyStyles from "../../Styles/MyStyles";
 import { postRequest } from "../../Services/RequestServices";
@@ -304,7 +303,7 @@ const CustomerReview = (props) => {
                       };
                       xhr.send(form_data);
                     }
-                    props.navigation.navigate("ReviewFeedback");
+                    props.navigation.navigate("ReviewFeedback", { search: "" });
                   }
                   setLoading(false);
                 }

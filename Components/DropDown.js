@@ -18,7 +18,15 @@ const DropDown = ({
 }) => {
   const [visible, setVisible] = useState(false);
 
-  const selectedLabel = data.find((item) => item[ext_val] === value)?.[ext_lbl] || placeholder;
+  // Handle both array and primitive values for comparison
+  const isValueInArray = (itemValue, targetValue) => {
+    if (Array.isArray(itemValue)) {
+      return itemValue.includes(targetValue);
+    }
+    return itemValue === targetValue;
+  };
+
+  const selectedLabel = data.find((item) => isValueInArray(item[ext_val], value))?.[ext_lbl] || placeholder;
 
   return (
     <View style={style}>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { FlatList, View, Linking, ImageBackground, RefreshControl } from "react-native";
 import { List, Text, TouchableRipple } from "react-native-paper";
 import { TouchableOpacity } from "react-native-gesture-handler";
@@ -9,7 +9,7 @@ import moment from "moment";
 import Loading from "../../Components/Loading";
 import { CapitalizeName } from "../../utils/CapitalizeName";
 const Greetings = (props) => {
-  const { userToken, branchId } = props.route.params;
+  const { userToken, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [recentdobdoa, setrecentdobdoa] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -40,6 +40,48 @@ const Greetings = (props) => {
     });
   }
 
+  const filteredData = useMemo(() => {
+    console.log('Search term:', search);
+    console.log('Grid data length:', recentdobdoa?.length);
+    
+    if (!search || !recentdobdoa?.length) {
+      console.log('No search term or empty grid data, returning all items');
+      return recentdobdoa || [];
+    }
+    
+    const searchTerm = search.toLowerCase().trim();
+    console.log('Searching for:', searchTerm);
+    
+    const result = recentdobdoa.filter((item) => {
+      if (!item) return false;
+      
+      // Check each field for the search term
+      const fieldsToSearch = [
+        { name: 'full_name', value: item.full_name },
+        { name: 'mobile', value: item.mobile },
+        { name: 'customer_id', value: item.category_name },
+        {name: 'occasion_date', value: item.occasion_date},
+        {name: 'occasion', value: item.occasion},
+
+      ];
+      
+      const hasMatch = fieldsToSearch.some(({ name, value }) => {
+        if (!value) return false;
+        const strValue = String(value).toLowerCase();
+        const match = strValue.includes(searchTerm);
+        if (match) {
+          console.log(`Match found in ${name}:`, value);
+        }
+        return match;
+      });
+      
+      return hasMatch;
+    });
+    
+    console.log('Filtered results count:', result.length);
+    return result;
+  }, [recentdobdoa, search]);
+
   return (
     <ImageBackground
       style={MyStyles.container}
@@ -48,7 +90,7 @@ const Greetings = (props) => {
       <Loading isloading={loading} />
       {/* <View style={MyStyles.container}> */}
       <FlatList
-        data={recentdobdoa}
+        data={filteredData}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }

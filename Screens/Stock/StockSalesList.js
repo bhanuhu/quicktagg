@@ -53,9 +53,13 @@ const StockSalesList = (props) => {
     });
   };
 const filteredData = griddata.filter((item) => {
-  return item.title.toLowerCase().includes(search.toLowerCase()) ||
-    item.date.toLowerCase().includes(search.toLowerCase()) ||
-    item.customer_name.toLowerCase().includes(search.toLowerCase());
+  const searchTerm = search?.toLowerCase() || '';
+  const title = item?.title?.toString().toLowerCase() || '';
+  const date = item?.date?.toString().toLowerCase() || '';
+  const customer_name = item?.customer_name?.toString().toLowerCase() || '';
+  return title.includes(searchTerm) ||
+    date.includes(searchTerm) ||
+    customer_name.includes(searchTerm);
 });
 
 

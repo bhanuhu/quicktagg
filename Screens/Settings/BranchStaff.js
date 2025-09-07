@@ -15,7 +15,6 @@ import {
   TouchableRipple,
   Text
 } from "react-native-paper";
-import CustomHeader from "../../Components/CustomHeader";
 import MyStyles from "../../Styles/MyStyles";
 import { postRequest } from "../../Services/RequestServices";
 import Autocomplete from "react-native-autocomplete-input";

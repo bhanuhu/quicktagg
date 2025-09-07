@@ -169,7 +169,8 @@ const StockAcceptanceList = (props) => {
                   <Button
                     mode="contained"
                     uppercase={false}
-                    style={{ marginLeft: "auto" }}
+                    labelStyle={{ color: "black" }}
+                    style={{ marginVertical: 5, fontSize: 10, marginLeft: "auto", borderRadius: 5 }}
                     onPress={() => {
                       props.navigation.navigate("StockAcceptance", {
                         tran_id: item.st_tran_id,

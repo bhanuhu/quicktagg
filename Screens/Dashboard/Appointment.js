@@ -243,6 +243,7 @@ const Appointment = (props) => {
 
 
                                 {/* Time Info */}
+                                {console.log(item)}
                                 <View style={{ alignItems: 'flex-end' }}>
                                     <Text style={{ fontSize: 12, color: '#888', textAlign: 'right' }}>
                                         {moment(item.datetime, 'YYYY-MM-DD HH:mm').format('HH:mm')}
@@ -262,9 +263,9 @@ const Appointment = (props) => {
                                             }}
                                         >
                                             <Text style={{ fontSize: 12, color: '#000', textAlign: 'right' }}>
-                                                {moment(item.appointment_date, 'YYYY-MM-DD HH:mm').format('HH:mm')}
+                                                {moment(item.appointment_date, 'DD-MM-YYYY HH:mm').format('HH:mm')}
                                                 {'\n'}
-                                                {moment(item.appointment_date, 'YYYY-MM-DD HH:mm:ss').format('DD/MM/YYYY')}
+                                                {moment(item.appointment_date, 'DD-MM-YYYY HH:mm:ss').format('DD/MM/YYYY')}
                                             </Text>
                                         </View>
                                     )}

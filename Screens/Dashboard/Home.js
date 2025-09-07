@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { View, ScrollView, Dimensions, Alert, RefreshControl } from 'react-native';
 import {
@@ -82,10 +82,63 @@ const Home = (props) => {
     total_sms: '',
     feedback: '',
   });
+  const { onUpdateNotifications } = props.route.params || {};
+  const [notifications, setNotifications] = useState(props.route.params?.notifications || 0);
+
+  // Update parent component when notifications change
+  useEffect(() => {
+    if (onUpdateNotifications) {
+      onUpdateNotifications(notifications);
+    }
+  }, [notifications, onUpdateNotifications]);
 
   const [branchType, setBranchType] = useState(null)
 
+  // Fetch notifications when component mounts and when branch type changes
+  useEffect(() => {
+    if (branchType) {
+      console.log('Branch type changed, fetching notifications...');
+      getBranchTypeAndFetchNotifications();
+    }
+  }, [branchType, getBranchTypeAndFetchNotifications]);
 
+  const getBranchTypeAndFetchNotifications = useCallback(async () => {
+    try {
+      console.log('Fetching notifications for branch type:', branchType);
+      if (branchType === "Jeweller") {
+        const resp = await postRequest(
+          "customervisit/check_today_notificaton",
+          { branch_id: branchId },
+          userToken
+        );
+
+        console.log("✅ Jeweller resp:", resp);
+        if (resp.status == 200) {
+          const count = resp.data[0]?.["check_appointment"] || 0;
+          console.log('Setting Jeweller notifications:', count);
+          setNotifications(count);
+        }
+      } else {
+        const resp = await postRequest(
+          "customervisit/due/service_notification",
+          {
+            branch_id: branchId,
+            from_date: param.from_date,
+            to_date: param.to_date,
+          },
+          userToken
+        );
+        console.log("✅ Service resp:", resp);
+        if (resp.status == 200) {
+          const count = resp.data[0]?.due_count || 0;
+          console.log('Setting Service notifications:', count);
+          setNotifications(count);
+        }
+      }
+    } catch (err) {
+      console.log("❌ Error fetching notifications:", err?.message, err);
+    }
+  }, [branchType, branchId, userToken, param.from_date, param.to_date]);
   useEffect(() => {
 
     postRequest("masters/branch/preview", { branch_id: branchId }, userToken).then((resp) => {
@@ -102,6 +155,27 @@ const Home = (props) => {
     });
 
   }, [])
+
+  // Track refresh state and loading
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Function to trigger a refresh
+  const handleRefresh = useCallback(async () => {
+    console.log('Refresh triggered');
+    try {
+      setLoading(true);
+      // This will also refresh notifications since it's called inside refreshData
+      await refreshData();
+
+      // Update the refresh key to trigger any dependent effects
+      setRefreshKey(prev => prev + 1);
+    } catch (error) {
+      console.error('Error during refresh:', error);
+      Alert.alert('Error', 'Failed to refresh data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [refreshData]);
 
   console.log('type', branchType)
 
@@ -183,9 +257,20 @@ const Home = (props) => {
     }, 100);
   };
 
+
+  // Initial data load
   React.useEffect(() => {
-    Refresh();
-  }, []);
+    refreshData();
+  }, [refreshData]);
+
+  // Set up auto-refresh interval
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      refreshData();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(interval);
+  }, [refreshData]);
 
   // Helper function to handle API errors consistently
   const handleApiError = (error) => {
@@ -194,8 +279,7 @@ const Home = (props) => {
     return null;
   };
 
-
-  const Refresh = async () => {
+  const refreshData = React.useCallback(async () => {
     try {
       setLoading(true);
       // Execute all API calls in parallel and wait for all to complete
@@ -214,7 +298,8 @@ const Home = (props) => {
         InterestAppointmentCount().catch(handleApiError),
         FeedbackCount().catch(handleApiError),
         SmsCount().catch(handleApiError),
-        ServiceDetails().catch(handleApiError)
+        ServiceDetails().catch(handleApiError),
+        getBranchTypeAndFetchNotifications().catch(handleApiError),
       ]);
     } catch (error) {
       console.error('Error in Refresh:', error instanceof Error ? error.message : 'Unknown error');
@@ -223,31 +308,35 @@ const Home = (props) => {
     } finally {
       setLoading(false);
     }
-  };
+  });
+
+
 
   const ServiceDetails = async () => {
-    return postRequest(
-      "masters/mobile/CustomerServiceDataApp",
-      {
-        branch_id: branchId,
-        from_date: param.from_date,
-        to_date: param.to_date,
-      },
-      userToken
-    ).then((resp) => {
+    try {
+      const resp = await postRequest(
+        "masters/mobile/CustomerServiceDataApp",
+        {
+          branch_id: branchId,
+          from_date: param.from_date,
+          to_date: param.to_date,
+        },
+        userToken
+      );
 
-
-
-      if (resp.status == 200) {
-        console.log('service', resp.data[0])
+      if (resp?.status === 200 && resp.data?.[0]) {
+        console.log('Service data updated:', resp.data[0]);
         setServiceData(resp.data[0]);
+        return resp.data[0];
       } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error"
-        );
+        console.warn('Unexpected response format:', resp);
+        throw new Error('Invalid response format');
       }
-    });
+    } catch (error) {
+      console.error('Error in ServiceDetails:', error);
+      // Don't show alert here as it will be handled by the Refresh function
+      throw error;
+    }
   }
 
   const AllFigures = () => {
@@ -912,19 +1001,33 @@ const Home = (props) => {
   };
 
   useEffect(() => {
-  postRequest("customervisit/Done/service", { branch_id: branchId }, userToken)
-    .then((resp) => {
-      if (resp) {
-        // console.log('Branch Preview Response:', resp.data); 
-        setBranchPreviewCount(resp.data[0]?.today_interest_yes_count || 0); 
-      } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error"
-        );
+    const fetchBranchPreview = async () => {
+      try {
+        const resp = await postRequest("customervisit/Done/service", { branch_id: branchId }, userToken);
+        if (resp?.status === 200 && resp.data?.[0]) {
+          console.log('Branch Preview Data:', resp.data[0]);
+          const count = parseInt(resp.data[0]?.today_interest_yes_count) || 0;
+          setBranchPreviewCount(count);
+        } else {
+          console.warn('Unexpected branch preview response:', resp);
+          setBranchPreviewCount(0);
+          throw new Error('Invalid response from server');
+        }
+      } catch (error) {
+        console.error('Error fetching branch preview:', error);
+        Alert.alert("Error", "Failed to load branch data. Please try again.");
       }
-    });
-}, []);
+    };
+
+    // Initial fetch
+    fetchBranchPreview();
+
+    // Set up refresh interval
+    const intervalId = setInterval(fetchBranchPreview, 30000);
+
+    // Cleanup
+    return () => clearInterval(intervalId);
+  }, [branchId, userToken]);
 
 
   const notresponsecustomerchartdata = [
@@ -951,7 +1054,7 @@ const Home = (props) => {
     },
   ];
   //------------------------End--------------------------------//
-  
+
   return (
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
@@ -1009,19 +1112,18 @@ const Home = (props) => {
         </TouchableRipple>
         <Pressable
           style={{
-            flexDirection: "row",
+            flexDirection: 'row',
             paddingHorizontal: 20,
             borderRadius: 10,
-            backgroundColor: "orange",
-
+            backgroundColor: 'orange',
             marginRight: 10,
           }}
           onPress={() => {
-            props.navigation.navigate("RecentActivity");
+            props.navigation.navigate('RecentActivity');
           }}
         >
           <Icon name="circle-medium" color="red" size={20} />
-          <Text style={{ color: "#FFF", fontWeight: 'bold' }}>Live</Text>
+          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Live</Text>
         </Pressable>
       </View>
       <ScrollView
@@ -1029,7 +1131,7 @@ const Home = (props) => {
         refreshControl={
           <RefreshControl
             refreshing={loading}
-            onRefresh={Refresh}
+            onRefresh={handleRefresh}
           />
         }
       >
@@ -1285,18 +1387,18 @@ const Home = (props) => {
                     marginVertical: 5,
                     width: "50%",
                   }}> */}
-                  <Button onPress={() => props.navigation.navigate("Appointment")} mode="contained"  style={{
-                  backgroundColor: "#ec1278ff",
-                  width: "25%",
-                  color:'#fff',
-                  borderColor: "#FFF",
-                  borderWidth: 1,
-                  textAlign:'center',
-                  marginVertical: 5,
-                  borderRadius:18,
-                  marginLeft:5
-                }}>
-                    <Text style={{color:'#fff', fontSize:20}}>{count_ap}</Text>
+                  <Button onPress={() => props.navigation.navigate("Appointment")} mode="contained" style={{
+                    backgroundColor: "#ec1278ff",
+                    width: "25%",
+                    color: '#fff',
+                    borderColor: "#FFF",
+                    borderWidth: 1,
+                    textAlign: 'center',
+                    marginVertical: 5,
+                    borderRadius: 18,
+                    marginLeft: 5
+                  }}>
+                    <Text style={{ color: '#fff', fontSize: 20 }}>{count_ap}</Text>
                   </Button>
                 </Pressable>
               </View>
@@ -1309,7 +1411,7 @@ const Home = (props) => {
                   width: "50%",
                   width: "50%",
                   fontWeight: 'bold',
-                  marginLeft:-50
+                  marginLeft: -50
                 }}
               >
                 Interest
@@ -1386,24 +1488,24 @@ const Home = (props) => {
                   ]}
                 >
                   <View style={{ flexGrow: 1 }}>
-                <Pressable onPress={() => props.navigation.navigate("ProductServiceScreen")}>
-                  <Button onPress={() => props.navigation.navigate("ProductServiceScreen")}  style={{
-                  backgroundColor: "#ec1278ff",
-                  width: 15,
-                  fontSize: 18,
-                  color:'white',
-                  flex:1,
-                  borderColor: "#FFF",
-                  borderWidth: 1,
-                  textAlign:'center',
-                  borderRadius:18,
-                  marginLeft:5,
-                  padding:0
-                }}>
-                    <Text style={{color:'white', fontSize:20}}>{branchPreviewCount}</Text>
-                  </Button>
-                </Pressable>
-              </View>
+                    <Pressable onPress={() => props.navigation.navigate("ProductServiceScreen")}>
+                      <Button onPress={() => props.navigation.navigate("ProductServiceScreen")} style={{
+                        backgroundColor: "#ec1278ff",
+                        width: 15,
+                        fontSize: 18,
+                        color: 'white',
+                        flex: 1,
+                        borderColor: "#FFF",
+                        borderWidth: 1,
+                        textAlign: 'center',
+                        borderRadius: 18,
+                        marginLeft: 5,
+                        padding: 0
+                      }}>
+                        <Text style={{ color: 'white', fontSize: 20 }}>{branchPreviewCount}</Text>
+                      </Button>
+                    </Pressable>
+                  </View>
                   <Text
                     style={{
                       textAlign: "center",
@@ -1412,7 +1514,7 @@ const Home = (props) => {
                       marginVertical: 5,
                       width: "50%",
                       fontWeight: 'bold',
-                      marginLeft:-50
+                      marginLeft: -50
                     }}
                   >
                     Services
@@ -2424,18 +2526,62 @@ const MissedCallGraphView = ({ visible = false, data }) => {
 
 const HomeStack = (props) => {
   const Stack = createStackNavigator();
-  const title = props.route.params.userName;
+  const { userName, notifications: initialNotifications, ...restParams } = props.route.params;
+  const [notifications, setNotifications] = useState(initialNotifications || 0);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Function to update notifications from child components
+  const updateNotifications = useCallback((count) => {
+    console.log('Updating notifications:', count);
+    setNotifications(count);
+  }, []);
+
+  // Function to trigger a refresh
+  const handleRefresh = useCallback(() => {
+    console.log('Refresh triggered');
+    setRefreshKey(prev => prev + 1);
+  }, []);
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen
         name="Home"
-        component={Home}
-        initialParams={props.route.params}
         options={{
           headerShown: true,
-          header: (props) => <CustomHeader title={title} {...props} />,
+          header: (props) => (
+            <CustomHeader
+              {...props}
+              notifications={notifications}
+              title={userName}
+              refreshKey={refreshKey}
+              onRefresh={handleRefresh}
+              route={{
+                ...props.route,
+                params: {
+                  ...props.route.params,
+                  notifications,
+                  refreshKey,
+                  onRefresh: handleRefresh
+                }
+              }}
+            />
+          ),
         }}
-      />
+      >
+        {() => (
+          <Home
+            {...props}
+            route={{
+              ...props.route,
+              params: {
+                ...props.route.params,
+                notifications,
+                onUpdateNotifications: updateNotifications,
+                refreshKey
+              }
+            }}
+          />
+        )}
+      </Stack.Screen>
 
       <Stack.Screen
         component={RecentActivity}

@@ -70,9 +70,14 @@ const StockList = (props) => {
     );
   };
   const filteredData = griddata.filter((item) => {
-    return item.to_branch.toLowerCase().includes(search.toLowerCase()) ||
-      item.entry_date.toLowerCase().includes(search.toLowerCase()) ||
-      item.status.toLowerCase().includes(search.toLowerCase());
+    const searchTerm = search?.toLowerCase() || '';
+    const toBranch = item?.to_branch?.toString().toLowerCase() || '';
+    const entryDate = item?.entry_date?.toString().toLowerCase() || '';
+    const status = item?.status?.toString().toLowerCase() || '';
+    
+    return toBranch.includes(searchTerm) ||
+      entryDate.includes(searchTerm) ||
+      status.includes(searchTerm);
   });
 
   return (
@@ -157,14 +162,15 @@ const StockList = (props) => {
                 {item.status == "Done" || item.status == "Cancel" ?
                   <Button
                     mode="contained"
+                    labelStyle={{ color: "black" }}
                     uppercase={false}
                     onPress={() => {
                       props.navigation.navigate("StockTransferPreview", {
                         tran_id: item.tran_id,
                       });
                     }}
-                    style={{ marginVertical: 5, fontSize: 10, marginLeft: "auto" }}
-                  >
+                    style={{ marginVertical: 5, fontSize: 10, marginLeft: "auto", borderRadius: 5, color: "black" }}
+                    >
                     Check
                   </Button>
                   :

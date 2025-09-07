@@ -303,9 +303,6 @@ const Wishlist = (props) => {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }>
-        <Text style={{padding: 10, fontWeight: 'bold'}}>
-          Showing {filteredData.length} of {griddata.length} items (search: "{search}")
-        </Text>
         
         {filteredData.map((item, index) => (
           <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
