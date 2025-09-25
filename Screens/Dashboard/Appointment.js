@@ -184,9 +184,9 @@ const Appointment = (props) => {
                         >
 
                             {/* Top Row */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
                                 {/* Left Info */}
-                                <View style={{ flexDirection: 'row' }}>
+                                <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                                     <View
                                         style={{
                                             borderWidth: 1,
@@ -223,21 +223,22 @@ const Appointment = (props) => {
 
                                 {/* Pressable Image with Zoom */}
                                 {item.image_path && item.url_image && (
-                                    <Pressable onPress={() => {
-                                        setSelectedImage(`${item.url_image}${item.image_path}`);
-                                        setIsZoomed(true);
-                                    }}>
-                                        <Image
-                                            source={{ uri: `${item.url_image}${item.image_path}` }}
-                                            style={{
-                                                width: 50,
-                                                height: 50,
-                                                borderRadius: 5,
-                                                marginBottom: 5,
-                                            }}
-                                            resizeMode="contain"
-                                        />
-                                    </Pressable>
+                                    <View style={{ width: 70, justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 }}>
+                                        <Pressable onPress={() => {
+                                            setSelectedImage(`${item.url_image}${item.image_path}`);
+                                            setIsZoomed(true);
+                                        }}>
+                                            <Image
+                                                source={{ uri: `${item.url_image}${item.image_path}` }}
+                                                style={{
+                                                    width: 50,
+                                                    height: 50,
+                                                    borderRadius: 5,
+                                                }}
+                                                resizeMode="contain"
+                                            />
+                                        </Pressable>
+                                    </View>
                                 )}
 
 
@@ -308,8 +309,8 @@ const Appointment = (props) => {
                                         name="medal"
                                         size={25}
                                         color="gold"
-                                        style={{ transform: [{ rotate: '180deg' }], marginTop: 5 }}
-                                    />
+                                        style={{ transform: [{ rotate: '180deg' }], position: 'absolute', right: 25, marginBottom: 10, top: 5 }}
+                                        />
                                 </View>
                             </View>
                         </View>

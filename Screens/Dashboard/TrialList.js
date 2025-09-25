@@ -106,7 +106,7 @@ const Wishlist = (props) => {
       if (resp.status == 200) {
 
         const filteredData = resp.data.filter(
-          item => item.added_from !== "exhibition" && item.added_from !== "trial"
+          item => item.added_from === "exhibition" && item.added_from === "trial"
         );
         setgriddata(filteredData);
         setOriginalGridData(filteredData)
@@ -298,8 +298,8 @@ const Wishlist = (props) => {
       }>
         {filteredData.map((item, index) => (
           <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
-            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ margin: 6, flexDirection: 'row' }}>
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{
                   borderWidth: 1,
                   borderRadius: 4,
@@ -334,18 +334,20 @@ const Wishlist = (props) => {
               </View>
 
 
-              <Pressable onPress={() => {
-                setSelectedImage(`${item.url_image}${item.image_path}`);
-                setIsZoomed(true);
-              }}>
-                <Image 
-                  source={{ uri: `${item.url_image}${item.image_path}` }} 
-                  style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }} 
-                />
-              </Pressable>
+              <View style={{ width: 70, justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 }}>
+                <Pressable onPress={() => {
+                  setSelectedImage(`${item.url_image}${item.image_path}`);
+                  setIsZoomed(true);
+                }}>
+                  <Image 
+                    source={{ uri: `${item.url_image}${item.image_path}` }} 
+                    style={{ width: 50, height: 50, borderRadius: 5 }} 
+                  />
+                </Pressable>
+              </View>
 
 
-              <View style={{ marginRight: 5, position: 'relative', height: '100%' }}>
+              <View style={{ width: 90, alignItems: 'flex-end', marginLeft: 'auto' }}>
 
                 <Text style={{ fontSize: 12, color: "#888", marginBottom: 10, textAlign: 'right' }}>
                   {moment(item.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
@@ -378,7 +380,7 @@ const Wishlist = (props) => {
                     name="medal"
                     size={25}
                     color={getInterestColor(item)}
-                    style={{ transform: [{ rotate: '180deg' }], position: 'absolute', bottom: -40, right: 25 }}
+                    style={{ transform: [{ rotate: '180deg' }], position: 'absolute', right: 25, marginBottom: 10, top: 0 }}
                   />
                 </View>
 

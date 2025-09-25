@@ -46,7 +46,7 @@ import MedalIcon from 'react-native-vector-icons/FontAwesome6';
 import DropDown from '../Components/DropDown';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
-
+import RNPickerSelect from 'react-native-picker-select';
 const Profile = (props) => {
   const Tab = createMaterialTopTabNavigator();
   const { userToken, customer_id, customer_mobile, missCallUser, branchId } = props.route.params;
@@ -2721,69 +2721,153 @@ const ProfileProductsPreview = (props) => {
 };
 
 const CustomerRedeem = (props) => {
-  const { userToken, search, customer_id } = props.route.params;
+  const { userToken, customer_id, branchId , search } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [griddata, setgriddata] = useState([]);
+  const [originalGridData, setOriginalGridData] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-  React.useEffect(() => {
+  const pickerItems = [
+    { label: 'All', value: null },
+    { label: 'Active', value: 'Active' },
+    { label: 'Redeemed', value: 'Redeem' },
+    { label: 'Expired', value: 'Expire' },
+  ];
 
-    Browse();
-
-  }, [customer_id]);
-
-  const Browse = () => {
-    let temparam = {
-      customer_id: customer_id,
-    };
-    postRequest(
-      "customervisit/getCustomerVoucherList", temparam, userToken
-    ).then((resp) => {
-      if (resp.status == 200) {
-        // console.log(`vouchers -> ${JSON.stringify(resp)}`)
-        setgriddata(resp.data);
-      } else {
-        Alert.alert(
-          "Error !",
-          "Oops! \nSeems like we run into some Server Error 7"
-        );
-      }
-    });
-    setLoading(false);
-  };
-  const Refresh = async () => {
+  const fetchVouchers = async () => {
     try {
       setLoading(true);
-      // Wait for all API calls to complete
-      await Promise.all([
-       BrowseActive(),
-       BrowseRedeemed(),
-       BrowseExpired(),
-      ]);
+      const temparam = { customer_id };
+      const resp = await postRequest(
+        "customervisit/getCustomerVoucherListByCustomer_id", 
+        temparam, 
+        userToken
+      );
+      
+      if (resp?.status === 200) {
+        setOriginalGridData(resp.data);
+        // Apply any existing category filter
+        applyCategoryFilter(resp.data, selectedCategory);
+      } else {
+        throw new Error(resp?.message || 'Failed to fetch vouchers');
+      }
     } catch (error) {
-      console.error('Error during refresh:', error);
-      // Optionally show an error message to the user
+      console.error('Error fetching vouchers:', error);
+      Alert.alert(
+        "Error",
+        error.message || "Failed to load vouchers. Please try again."
+      );
     } finally {
-      // Always set loading to false when all operations are done or if there's an error
       setLoading(false);
     }
   };
 
+  const applyCategoryFilter = (data, category) => {
+    let result = [...data];
+    
+    if (category) {
+      result = result.filter(item => item.status === category);
+    }
+    
+    setgriddata(result);
+  };
 
-//   React.useEffect(() => {
-//     Refresh();
-//   }, [customer_id]);
+  const handleCategoryChange = (value) => {
+    setSelectedCategory(value);
+    applyCategoryFilter(originalGridData, value);
+  };
 
-//   const scrollTimeout = useRef(null);
-//  const handleScroll = () => {
-//     // Hide the banner when scrolling
+  React.useEffect(() => {
+    fetchVouchers();
+  }, [customer_id, userToken]);
 
-//     // Clear any existing timeout
-//     if (scrollTimeout.current) {
-//       clearTimeout(scrollTimeout.current);
-//     }
+  const handleRedeem = (customer_id, voucher_id, voucher_name, details, tran_id) => {
+    const msg = `${voucher_name} ${details} confirm redeem?`;
+    Alert.alert(
+      "Confirm Redemption",
+      msg,
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "OK",
+          onPress: async () => {
+            try {
+              const temparam = { 
+                tran_id, 
+                customer_id, 
+                voucher_id 
+              };
+              
+              const data = await postRequest(
+                "customervisit/insertVoucherRedeem", 
+                temparam, 
+                userToken
+              );
+              
+              if (data?.data?.[0]?.valid) {
+                // Refresh the vouchers list after successful redemption
+                fetchVouchers();
+              } else {
+                throw new Error('Failed to redeem voucher');
+              }
+            } catch (error) {
+              console.error('Error redeeming voucher:', error);
+              Alert.alert(
+                "Error", 
+                error.message || "Failed to redeem voucher. Please try again."
+              );
+            }
+          }
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+  const filteredData = React.useMemo(() => {
+    console.log('Search term:', search);
+    console.log('Grid data length:', griddata?.length);
 
-//   };
+    if (!search || !griddata?.length) {
+      console.log('No search term or empty grid data, returning all items');
+      return griddata || [];
+    }
 
+    const searchTerm = search.toLowerCase().trim();
+    console.log('Searching for:', searchTerm);
+
+    const result = griddata.filter((item) => {
+      if (!item) return false;
+
+      // Check each field for the search term
+      const fieldsToSearch = [
+        { name: 'customer_name', value: item.status },
+        { name: 'voucher_name', value: item.voucher_name },
+        { name: 'voucher_value', value: item.voucher_value },
+        { name: 'redeem_start_date', value: moment(item.redeem_start_date).format("DD/MM/YYYY") },
+        { name: 'redeem_end_date', value: moment(item.redeem_end_date).format("DD/MM/YYYY") },
+      ];
+
+      const hasMatch = fieldsToSearch.some(({ name, value }) => {
+        if (!value) return false;
+        const strValue = String(value).toLowerCase();
+        const match = strValue.includes(searchTerm);
+        if (match) {
+          console.log(`Match found in ${name}:`, value);
+        }
+        return match;
+      });
+
+      return hasMatch;
+    });
+
+    console.log('Filtered results count:', result.length);
+    return result;
+  }, [griddata, search]);
+ 
+  
   return (
     <View style={MyStyles.container}>
       {/* <ScrollView
@@ -2795,10 +2879,40 @@ const CustomerRedeem = (props) => {
                 />
               }
             > */}
-      <FlatList
-        style={{ marginVertical: 10 }}
-        data={griddata}
-        renderItem={({ item, index }) => (
+       <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+
+<View style={{ width: '100%' }}>
+          <RNPickerSelect
+            onValueChange={handleCategoryChange}
+            items={pickerItems}
+            value={selectedCategory}
+    placeholder={{ label: 'Select Category', value: null }}
+            useNativeAndroidPickerStyle={false}
+            style={{
+              inputAndroid: {
+        fontSize: 13,
+        paddingHorizontal: 5,
+        paddingVertical: 5,
+        borderWidth: 1,
+        borderColor: 'gray',
+        borderRadius: 4,
+        color: 'black',
+        paddingRight: 15,
+              },
+            }}
+          />
+        </View>
+
+
+
+
+
+      </View>
+
+        <FlatList
+          style={{ marginVertical: 10 }}
+          data={filteredData}
+          renderItem={({ item, index }) => (
           <Card
             key={item.voucher_id}
             style={{
@@ -2811,7 +2925,7 @@ const CustomerRedeem = (props) => {
           >
 
             {
-              item.IsvoucherExpire == "false" ?
+              item.status == "Expire" ?
                 <BadgeRibbon
                   text="Expire"
                   color="red"
@@ -2819,9 +2933,16 @@ const CustomerRedeem = (props) => {
                   textStyle={{ top: 20, left: -20 }}
                 />
                 :
+                item.status == "Active" ?
                 <BadgeRibbon
                   text="Active"
                   color="green"
+                  position="voucherRight"
+                  textStyle={{ top: 20, left: -20 }}
+                />:
+                <BadgeRibbon
+                  text="Redeem"
+                  color="blue"
                   position="voucherRight"
                   textStyle={{ top: 20, left: -20 }}
                 />
@@ -2860,11 +2981,11 @@ const CustomerRedeem = (props) => {
                   </Text>
                   <Text style={{ marginBottom: 20 }}>
                     {"Value => "}
-                    <Text style={{ fontWeight: 'bold' }}>{item.amount}</Text>
+                    <Text style={{ fontWeight: 'bold' }}>{item.voucher_value}</Text>
                   </Text>
                   <Text>
                     {"Start Date => "}
-                    <Text style={{ fontWeight: 'bold' }}>{item.start_date}</Text>
+                    <Text style={{ fontWeight: 'bold' }}>{moment(item.redeem_start_date).format("DD/MM/YYYY")}</Text>
                   </Text>
                   <Text>
                     {"End Date => "}
@@ -2873,14 +2994,22 @@ const CustomerRedeem = (props) => {
                 </View>
                 <View>
                   {
-                    item.IsvoucherExpire !== "false" && (
+                    item.status === "Active" && (
                       <Button
                         mode="contained"
                         compact
                         uppercase={false}
                         style={{ borderRadius: 5 }}
                         labelStyle={{ color: "black" }}
-                       
+                        onPress={() => {
+                          handleRedeem(
+                            item.customer_id,
+                            item.voucher_id,
+                            item.voucher_name,
+                            item.details,
+                            item.tran_id
+                          )
+                        }}
                       >
                         Redeem
                       </Button>

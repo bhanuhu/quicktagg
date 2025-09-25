@@ -142,7 +142,7 @@ const Wishlist = (props) => {
         return 'red';
     }
   };
-  
+
   // Debug effect to log data structure
   React.useEffect(() => {
     if (griddata && griddata.length > 0) {
@@ -153,18 +153,18 @@ const Wishlist = (props) => {
   const filteredData = React.useMemo(() => {
     console.log('Search term:', search);
     console.log('Grid data length:', griddata?.length);
-    
+
     if (!search || !griddata?.length) {
       console.log('No search term or empty grid data, returning all items');
       return griddata || [];
     }
-    
+
     const searchTerm = search.toLowerCase().trim();
     console.log('Searching for:', searchTerm);
-    
+
     const result = griddata.filter((item) => {
       if (!item) return false;
-      
+
       // Check each field for the search term
       const fieldsToSearch = [
         { name: 'customer_name', value: item.customer_name },
@@ -178,7 +178,7 @@ const Wishlist = (props) => {
         { name: 'updated_interest', value: item.updated_interest },
         { name: 'customer_category', value: item.customer_category }
       ];
-      
+
       const hasMatch = fieldsToSearch.some(({ name, value }) => {
         if (!value) return false;
         const strValue = String(value).toLowerCase();
@@ -188,10 +188,10 @@ const Wishlist = (props) => {
         }
         return match;
       });
-      
+
       return hasMatch;
     });
-    
+
     console.log('Filtered results count:', result.length);
     return result;
   }, [griddata, search]);
@@ -303,11 +303,11 @@ const Wishlist = (props) => {
       <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }>
-        
+
         {filteredData.map((item, index) => (
           <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
-            <View key={index} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ margin: 6, flexDirection: 'row' }}>
+            <View key={index} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+              <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                 <View style={{
                   borderWidth: 1,
                   borderRadius: 4,
@@ -342,18 +342,20 @@ const Wishlist = (props) => {
               </View>
 
 
-              <Pressable onPress={() => {
-                setSelectedImage(`${item.url_image}${item.image_path}`);
-                setIsZoomed(true);
-              }}>
-                <Image 
-                  source={{ uri: `${item.url_image}${item.image_path}` }} 
-                  style={{ width: 50, height: 50, borderRadius: 5, marginRight: 10 }} 
-                />
-              </Pressable>
+              <View style={{ width: 70, justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 }}>
+                <Pressable onPress={() => {
+                  setSelectedImage(`${item.url_image}${item.image_path}`);
+                  setIsZoomed(true);
+                }}>
+                  <Image
+                    source={{ uri: `${item.url_image}${item.image_path}` }}
+                    style={{ width: 50, height: 50, borderRadius: 5 }}
+                  />
+                </Pressable>
+              </View>
 
 
-              <View style={{ marginRight: 5, position: 'relative', height: '100%' }}>
+              <View style={{ width: 90, alignItems: 'flex-end', marginLeft: 'auto' }}>
 
                 <Text style={{ fontSize: 12, color: "#888", marginBottom: 10, textAlign: 'right' }}>
                   {moment(item.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
@@ -386,7 +388,7 @@ const Wishlist = (props) => {
                     name="medal"
                     size={25}
                     color={getInterestColor(item)}
-                    style={{ transform: [{ rotate: '180deg' }], position: 'absolute', right: 25, marginBottom: 10 ,top: 0}}
+                    style={{ transform: [{ rotate: '180deg' }], position: 'absolute', right: 25, marginBottom: 10, top: 0 }}
                   />
                 </View>
 
@@ -431,7 +433,7 @@ const Wishlist = (props) => {
 
       {/* Zoomable Image */}
       {selectedImage && (
-        <Pressable 
+        <Pressable
           onPress={() => {
             if (!isZoomed) {
               setIsZoomed(true);
@@ -452,8 +454,8 @@ const Wishlist = (props) => {
             zIndex: 1000
           }}
         >
-          <Image 
-            source={{ uri: selectedImage }} 
+          <Image
+            source={{ uri: selectedImage }}
             style={{
               width: '60%',
               height: '60%',

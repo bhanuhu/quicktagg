@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import { View, ScrollView, Dimensions, Alert, RefreshControl } from 'react-native';
+import { View, ScrollView, Dimensions, Alert, RefreshControl, TouchableOpacity } from 'react-native';
 import {
   Button,
   IconButton,
@@ -264,13 +264,7 @@ const Home = (props) => {
   }, [refreshData]);
 
   // Set up auto-refresh interval
-  React.useEffect(() => {
-    const interval = setInterval(() => {
-      refreshData();
-    }, 30000); // 30 seconds
 
-    return () => clearInterval(interval);
-  }, [refreshData]);
 
   // Helper function to handle API errors consistently
   const handleApiError = (error) => {
@@ -1099,32 +1093,51 @@ const Home = (props) => {
           </View>
         </Modal>
       </Portal>
-      <View style={MyStyles.row}>
-        <TouchableRipple onPress={() => setDateModal(true)}>
+      <View style={[MyStyles.row, { 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginRight: 15,
+      }]}>
+        <TouchableRipple 
+          onPress={() => setDateModal(true)}
+          style={{
+            padding: 8,
+            borderRadius: 8
+          }}
+        >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-            <IconButton icon="calendar" />
-            <Text style={{ fontWeight: 'bold' }}>
+            <IconButton icon="calendar" size={20} />
+            <Text style={{ fontWeight: 'bold', marginLeft: -8 }}>
               {moment(param.from_date).format("DD/MM/YYYY") +
                 " - " +
                 moment(param.to_date).format("DD/MM/YYYY")}
             </Text>
           </View>
         </TouchableRipple>
-        <Pressable
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => props.navigation.navigate('RecentActivity')}
           style={{
             flexDirection: 'row',
-            paddingHorizontal: 20,
-            borderRadius: 10,
+            alignItems: 'center',
             backgroundColor: 'orange',
-            marginRight: 10,
-          }}
-          onPress={() => {
-            props.navigation.navigate('RecentActivity');
+            paddingHorizontal: 16,
+            borderRadius: 10,
+            elevation: 3,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
           }}
         >
           <Icon name="circle-medium" color="red" size={20} />
-          <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Live</Text>
-        </Pressable>
+          <Text style={{ 
+            color: '#FFF', 
+            fontWeight: 'bold',
+            marginLeft: 5,
+            fontSize: 14
+          }}>Live</Text>
+        </TouchableOpacity>
       </View>
       <ScrollView
         onScroll={handleScroll} scrollEventThrottle={16}
