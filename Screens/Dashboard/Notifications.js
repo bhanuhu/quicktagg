@@ -155,20 +155,36 @@ const Notifications = (props) => {
       .then(([notifResp, serviceResp]) => {
         console.log('Notification response:', notifResp);
         if (notifResp.status === 200) {
-          setgriddata(notifResp.data);
+          // Filter notifications for the last 7 days
+          const sevenDaysAgo = moment().subtract(7, 'days').startOf('day');
+          const today = moment().endOf('day');
+          
+          const filteredNotifications = notifResp.data.filter(item => {
+            if (!item) return false;
+            const itemDate = moment(item.edatetime || item.date || new Date());
+            return itemDate.isBetween(sevenDaysAgo, today, null, '[]');
+          });
+          
+          setgriddata(filteredNotifications);
         } else {
           Alert.alert('Error!', 'Failed to fetch notifications');
         }
 
         if (serviceResp.status === 200) {
-          console.log(`service response --------> ${JSON.stringify(serviceResp.data)}`)
-          const today = moment().format('YYYY-MM-DD');
-          const filtered = serviceResp.data.filter(
-            (item) =>
-              item.status === 'Due' &&
-              moment(item.next_service).format('YYYY-MM-DD') === today
-          );
-          setServiceData(filtered);
+          console.log(`service response --------> ${JSON.stringify(serviceResp.data)}`);
+          
+          // Filter service data for the last 7 days and due items
+          const sevenDaysAgo = moment().subtract(7, 'days').startOf('day');
+          const today = moment().endOf('day');
+          
+          const filteredServices = serviceResp.data.filter(item => {
+            if (!item) return false;
+            const itemDate = moment(item.next_service || item.last_service_date || new Date());
+            return item.status === 'Due' && 
+                   itemDate.isBetween(sevenDaysAgo, today, null, '[]');
+          });
+          
+          setServiceData(filteredServices);
         } else {
           Alert.alert('Error!', 'Failed to fetch service data');
         }
