@@ -90,7 +90,21 @@ const StockAcceptance = (props) => {
       }
     );
   };
+let imageURi =(item)=>{
+  console.log(item.image_path)
+    if (item.image_path.startsWith('\thttps')){
+      console.log("1st",item.image_path.split('\t')[1])
+      return item.image_path.split('\t')[1];
+    };
+    if(item.image_path.startsWith('https')){
+      console.log("2st",item.image_path)
 
+      return item.image_path
+    }
+      console.log("3st",item.url_image + "" + item.image_path)
+
+    return item.url_image + "" + item.image_path;
+  }
   return (
     <ImageBackground
       style={MyStyles.container}
@@ -162,7 +176,9 @@ const StockAcceptance = (props) => {
                   }}
                 >
                   <Image
-                    source={{ uri: resp.url_image + "" + resp.image_path }}
+                    source={{ 
+                       uri: imageURi(resp)
+                     }}
                     style={{
                       height: 100,
                       width: 80,

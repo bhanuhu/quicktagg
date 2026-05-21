@@ -335,9 +335,9 @@ const SelectCustomer = ({
                         fontWeight: "bold",
                         padding: 2
                       }}>
-                        {item.category_name == null
+                        {item.type == null
                           ? ""
-                          : item.category_name.charAt(0)}
+                          : item.type.charAt(0)}
                       </Text>
                     </TouchableRipple>
                   );

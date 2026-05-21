@@ -28,7 +28,7 @@ const CategoryList = (props) => {
   const { userToken, search } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [griddata, setGridData] = useState([]);
-  console.log(griddata)
+  // console.log(griddata)
 
   useEffect(() => {
     fetchCategoryData();
@@ -42,7 +42,7 @@ const CategoryList = (props) => {
         { search: search || "" }, // Fix for undefined search
         userToken
       );
-      console.log(`p c -> ${JSON.stringify(resp.data)}`)
+      // console.log(`p c -> ${JSON.stringify(resp.data)}`)
       if (resp.status === 200) {
         setGridData(resp.data);
       } else {

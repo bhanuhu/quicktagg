@@ -30,14 +30,19 @@ const StockList = (props) => {
   const [loading, setLoading] = useState(true);
   const [griddata, setgriddata] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
+  
   React.useEffect(() => {
+    // Reset data when search changes to empty (indicating new item creation)
+    if (search === "") {
+      setgriddata([]);
+    }
     Refresh();
   }, [search, props]);
 
   const Refresh = () => {
     postRequest(
       "transactions/stockTransfer/browse_app",
-      { search: "" },
+      { search: search },
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
@@ -84,6 +89,7 @@ const StockList = (props) => {
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
       <FlatList
+        key={search} // Add key prop to force re-render when search changes
         data={filteredData}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={Refresh} />

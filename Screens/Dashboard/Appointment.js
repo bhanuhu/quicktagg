@@ -25,7 +25,7 @@ import Loading from '../../Components/Loading';
 import { CapitalizeName } from '../../utils/CapitalizeName';
 
 const Appointment = (props) => {
-    const { userToken, branchId } = props.route.params;
+    const { userToken, branchId, search: routeSearch } = props.route.params;
     const [loading, setLoading] = useState(false);
     const [griddata, setgriddata] = useState([]);
     const [param, setparam] = useState({
@@ -36,6 +36,7 @@ const Appointment = (props) => {
     const [refreshing, setRefreshing] = useState(false);
     const [selectedImage, setSelectedImage] = useState(null);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [showTodayOnly, setShowTodayOnly] = useState(true);
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -80,7 +81,98 @@ const Appointment = (props) => {
                 Alert.alert('Error!', 'Failed to load appointments');
             });
     };
-    
+
+    const filteredData = React.useMemo(() => {
+        let result = griddata || [];
+        console.log('Total groups:', griddata);
+        console.log('Filtered groups:');
+        // Filter by today's date if enabled
+        if (showTodayOnly) {
+            const today = moment().startOf('day');
+
+            result = result.filter(group => {
+                // remove fake Z, treat as local IST
+                const groupDate = moment(
+                    group.appointment_date.replace('Z', '')
+                ).startOf('day');
+
+                const isMatch = groupDate.isSame(today, 'day');
+
+                console.log({
+                    raw: group.datetime,
+                    parsed: groupDate.format('YYYY-MM-DD HH:mm:ss'),
+                    today: today.format('YYYY-MM-DD HH:mm:ss'),
+                    match: isMatch
+                });
+
+                return isMatch;
+            });
+        }
+
+        // Filter by search term
+        if (!routeSearch || result.length === 0) {
+            return result;
+        }
+
+        const searchTerm = routeSearch.toLowerCase().trim();
+        console.log('Searching for:', searchTerm);
+
+        return result.filter((group) => {
+            if (!group) return false;
+
+            // Search in group level fields
+            const groupFields = [
+                group.entry_no,
+                group.customer_name,
+                group.mobile,
+                group.staff_name,
+                group.remarks,
+                group.sales_type,
+                group.final_amount,
+                group.datetime,
+            ];
+
+            // Check if any group field matches
+            const groupMatch = groupFields.some(field => {
+                if (!field) return false;
+                return String(field).toLowerCase().includes(searchTerm);
+            });
+
+            if (groupMatch) return true;
+
+            // Search in products
+            if (group.products?.length > 0) {
+                return group.products.some(product => {
+                    const productFields = [
+                        product.product_name,
+                        product.product_code,
+                        product.category_name,
+                        product.subcategory_name,
+                        product.staff_name,
+                        product.remarks
+                    ];
+                    return productFields.some(field => {
+                        if (!field) return false;
+                        return String(field).toLowerCase().includes(searchTerm);
+                    });
+                });
+            }
+
+            return false;
+        });
+    }, [griddata, routeSearch, showTodayOnly]);
+
+
+    let imageURi = (item) => {
+    if (item.image_path.startsWith('\thttps')) {
+      return item.image_path.split('\t')[1];
+    };
+    if (item.image_path.startsWith('https')) {
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
+
 
     return (
         <View style={MyStyles.container}>
@@ -142,16 +234,24 @@ const Appointment = (props) => {
                         flexDirection: 'row',
                         paddingHorizontal: 20,
                         borderRadius: 10,
-                        backgroundColor: 'orange',
+                        backgroundColor: showTodayOnly ? 'green' : 'orange',
                         marginRight: 10,
                     }}
                     onPress={() => {
-                        props.navigation.navigate('RecentActivity');
+                        setShowTodayOnly(!showTodayOnly);
                     }}
                 >
-                    <Icon name="circle-medium" color="red" size={20} />
-                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>Live</Text>
+                    <Icon name="circle-medium" color={showTodayOnly ? 'white' : 'red'} size={20} />
+                    <Text style={{ color: '#FFF', fontWeight: 'bold' }}>{showTodayOnly ? 'Show All' : 'Today'}</Text>
                 </Pressable>
+            </View>
+
+            {/* Results Counter */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 10, marginVertical: 5 }}>
+                <Text style={{ fontSize: 12, color: '#666' }}>
+                    Showing {filteredData.length} of {griddata.length} entries
+                    {showTodayOnly && ' (Today only)'}
+                </Text>
             </View>
 
             {/* Appointments List */}
@@ -161,12 +261,12 @@ const Appointment = (props) => {
                     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
                 }
             >
-                {griddata.length === 0 && !loading ? (
+                {filteredData.length === 0 && !loading ? (
                     <Text style={{ textAlign: 'center', marginTop: 20 }}>
                         No Follow-up Appointments Found
                     </Text>
                 ) : (
-                    griddata.map((item, index) => (
+                    filteredData.map((item, index) => (
                         <View
                             key={index}
                             style={{
@@ -229,7 +329,7 @@ const Appointment = (props) => {
                                             setIsZoomed(true);
                                         }}>
                                             <Image
-                                                source={{ uri: `${item.url_image}${item.image_path}` }}
+                                                source={{uri:imageURi(item)}}
                                                 style={{
                                                     width: 50,
                                                     height: 50,
@@ -310,7 +410,7 @@ const Appointment = (props) => {
                                         size={25}
                                         color="gold"
                                         style={{ transform: [{ rotate: '180deg' }], position: 'absolute', right: 25, marginBottom: 10, top: 5 }}
-                                        />
+                                    />
                                 </View>
                             </View>
                         </View>
@@ -319,7 +419,7 @@ const Appointment = (props) => {
             </ScrollView>
             {/* Zoomable Image */}
             {selectedImage && (
-                <Pressable 
+                <Pressable
                     onPress={() => {
                         if (!isZoomed) {
                             setIsZoomed(true);
@@ -340,8 +440,8 @@ const Appointment = (props) => {
                         zIndex: 1000
                     }}
                 >
-                    <Image 
-                        source={{ uri: selectedImage }} 
+                    <Image
+                        source={{ uri: selectedImage }}
                         style={{
                             width: '60%',
                             height: '60%',

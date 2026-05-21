@@ -106,13 +106,14 @@ const Wishlist = (props) => {
       if (resp.status == 200) {
 
         const filteredData = resp.data.filter(
-          item => item.added_from === "exhibition" && item.added_from === "trial"
+          item => {
+            console.log("item", item.added_from);
+            return item.added_from === 'exhibition' || item.added_from === 'trial';
+          }
         );
         setgriddata(filteredData);
         setOriginalGridData(filteredData)
-
-
-
+        console.log("trial", filteredData)
 
       } else {
         Alert.alert("Error !", "Oops! \nSeems like we run into some Server Error");
@@ -189,7 +190,15 @@ const Wishlist = (props) => {
       return result;
     }, [griddata, search]);
 
-
+  let imageURi = (item) => {
+    if (item.image_path.startsWith('\thttps')) {
+      return item.image_path.split('\t')[1];
+    };
+    if (item.image_path.startsWith('https')) {
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
   return (
     <View style={MyStyles.container}>
       <Loading isloading={loading} />
@@ -336,11 +345,11 @@ const Wishlist = (props) => {
 
               <View style={{ width: 70, justifyContent: 'center', alignItems: 'center', marginHorizontal: 15 }}>
                 <Pressable onPress={() => {
-                  setSelectedImage(`${item.url_image}${item.image_path}`);
+                  setSelectedImage(`${imageURi(item)}`);
                   setIsZoomed(true);
                 }}>
                   <Image 
-                    source={{ uri: `${item.url_image}${item.image_path}` }} 
+                    source={{uri:imageURi(item)}} 
                     style={{ width: 50, height: 50, borderRadius: 5 }} 
                   />
                 </Pressable>
@@ -447,7 +456,7 @@ const Wishlist = (props) => {
           }}
         >
           <Image 
-            source={{ uri: selectedImage }} 
+            source={{uri:selectedImage}} 
             style={{
               width: '60%',
               height: '60%',

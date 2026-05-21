@@ -1,11 +1,13 @@
 import React, { useEffect, useState,   useCallback } from "react";
-import { SafeAreaView, StatusBar, View, TouchableOpacity } from "react-native";
+import { SafeAreaView, StatusBar, View, TouchableOpacity, Alert } from "react-native";
 import { IconButton, Text, Menu, Badge } from "react-native-paper";
 import MyStyles from "../Styles/MyStyles";
 import { AuthContext } from "./Context";
 import { postRequest } from '../Services/RequestServices';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
+import { launchCamera } from 'react-native-image-picker';
+import BarcodeScanning from '@react-native-ml-kit/barcode-scanning';
 
 const CustomHeader = (props) => {
   const { userToken, branchId, search, refreshKey, onRefresh, notifications } = props;
@@ -50,6 +52,78 @@ const CustomHeader = (props) => {
     props.navigation.navigate(screen);
   };
 
+  // Camera scan handler
+  const handleCameraScan = async () => {
+    // Get userToken from props or AsyncStorage
+    let token = userToken;
+    if (!token) {
+      try {
+        token = await AsyncStorage.getItem('userToken');
+      } catch (e) {
+        console.error('Error getting token from storage:', e);
+      }
+    }
+    
+    if (!token) {
+      Alert.alert('Error', 'User not authenticated. Please login again.');
+      return;
+    }
+
+    launchCamera(
+      {
+        mediaType: 'photo',
+        cameraType: 'back',
+        quality: 1,
+        includeBase64: false,
+      },
+      async response => {
+        if (response.didCancel) return;
+        if (response.errorCode) {
+          Alert.alert('Error', response.errorMessage);
+          return;
+        }
+
+        const uri = response.assets[0].uri;
+        console.log('Camera image URI:', uri);
+
+        try {
+          // For ML Kit, we need to pass the URI directly
+          // The library handles file:// and content:// URIs internally
+          console.log('Scanning URI:', uri);
+          const barcodes = await BarcodeScanning.scan(uri);
+          console.log('Barcodes found:', barcodes.length);
+
+          if (barcodes.length > 0) {
+            const barcode = barcodes[0];
+            console.log('Barcode object:', JSON.stringify(barcode));
+            
+            // Try different properties that might contain the value
+            const scannedValue = barcode.rawValue || barcode.value || barcode.displayValue || barcode.text;
+            console.log('Scanned value:', scannedValue);
+            
+            if (scannedValue) {
+              // Navigate to ProductsPreview with the scanned product code
+              props.navigation.navigate('ProductsPreview', { 
+                scannedProductCode: scannedValue,
+                userToken: token,
+                price: null,
+                productData: null,
+                showInventory: true
+              });
+            } else {
+              Alert.alert('Error', 'Could not read barcode value. Please try again.');
+            }
+          } else {
+            Alert.alert('No Barcode', 'No barcode found in image. Please try again with a clearer image.');
+          }
+        } catch (e) {
+          console.error('Barcode scan error:', e);
+          Alert.alert('Error', `Failed to scan barcode: ${e.message || 'Unknown error'}`);
+        }
+      },
+    );
+  };
+
 
   return (
     <>
@@ -77,6 +151,14 @@ const CustomHeader = (props) => {
         <Text style={{ fontSize: 20, flexGrow: 1, fontWeight: 'bold' }}>
           {props.title}
         </Text>
+
+        {/* Camera Icon */}
+        <TouchableOpacity
+          onPress={handleCameraScan}
+          style={{ position: "relative" }}
+        >
+          <IconButton icon="camera" size={25} />
+        </TouchableOpacity>
 
         {/* 🔔 Bell Icon with Badge */}
         <TouchableOpacity

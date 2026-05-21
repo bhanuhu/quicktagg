@@ -25,7 +25,7 @@ const Dashboard = (props) => {
   useEffect(() => {
 
     postRequest("masters/branch/preview", { branch_id: branchId }, userToken).then((resp) => {
-
+      console.log("branchkonsi",resp)
       if (resp) {
         setBranchType(resp.branch_type)
          AsyncStorage.setItem('branchType', resp.branch_type);
@@ -52,9 +52,9 @@ const Dashboard = (props) => {
         {[
           { name: "HomeStack", Component: HomeStack, icon: "home", label: "Home" },
           { name: "Wishlist", Component: Wishlist, icon: "heart", label: "Wishlist", Header: TitleBar },
-          branchType == "Jeweller"
-            ? { name: "Trial", Component: TrialList, icon: "transit-transfer", label: "Trial", Header: TitleBar }
-            : { name: "Service", Component: Service, icon: "cog-outline", label: "Service", Header: TitleBar },
+          branchType == "2-Vehicle"
+            ? { name: "Service", Component: Service, icon: "cog-outline", label: "Service", Header: TitleBar }
+            :{ name: "Trial", Component: TrialList, icon: "transit-transfer", label: "Trial", Header: TitleBar },
           { name: "Stock", Component: Stock, icon: "truck-delivery", label: "Stock", Header: TitleBar },
           { name: "Calls", Component: Calls, icon: "phone", label: "Calls", Header: TitleBar }
         ].map(({ name, Component, icon, label, Header }) => (

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { FlatList, View, Alert } from "react-native";
 import { Text } from "react-native-paper";
 import { postRequest } from "../../Services/RequestServices";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import Icon from "react-native-vector-icons/FontAwesome6";
 import moment from "moment-timezone";
 import Loading from "../../Components/Loading";
 import { CapitalizeName } from "../../utils/CapitalizeName";
@@ -38,11 +38,11 @@ const RecentActivity = (props) => {
     // Format the time to show hours and minutes only
     const formattedTime = moment.utc(dateTime).format('HH:mm');
     const formattedDate = moment.utc(dateTime).format('DD-MM-YYYY');
-    
     // Get today's date and compare
-    const isToday = moment().isSame(moment.utc(dateTime), 'day');
-    const isCurrentWeek = moment().isSame(moment.utc(dateTime), 'week');
-    
+  //  const isToday = moment(dateTime).isSame(moment(), 'day');
+  //  const isCurrentWeek = moment(dateTime).isSame(moment(), 'week');
+    const isToday = moment.utc(dateTime).isSame(moment.utc(), 'day');
+const isCurrentWeek = moment.utc(dateTime).isSame(moment.utc(), 'week');
     // Format the display for the date and time
     let dateTimeDisplay = '';
     
@@ -54,7 +54,7 @@ const RecentActivity = (props) => {
       dateTimeDisplay = `${formattedTime}\n${moment.utc(dateTime).format('dddd')}`;
     } else {
       // For older: Show date and time (e.g., "28/08/2025, 16:30")
-      dateTimeDisplay = `${formattedTime} ${formattedDate}`;
+      dateTimeDisplay = `${formattedTime} \n ${formattedDate}`;
     }
 
     return (
@@ -94,7 +94,7 @@ const RecentActivity = (props) => {
               </Text>
 
               {item.type === "New Customer" && (
-                <Icon name="brightness-1" size={10} style={{ marginHorizontal: 5, color: "lightgreen" }} />
+                <Icon name="circle" solid size={10} style={{ marginHorizontal: 5, color: "lightgreen" }} />
               )}</View>
 
               {/* Mobile Number & Icons */}
@@ -107,6 +107,7 @@ const RecentActivity = (props) => {
                 {item.wish === "true" ? <Icon name="heart" size={iconSize} style={{ marginHorizontal: 3, color: "red" }} /> : null}
                 {item.type === "Upload" ? <Icon name="upload" size={iconSize} style={{ marginHorizontal: 3, color: "green" }} /> : null}
                 {item.type === "Service" ? <Icon name="cog-outline" size={iconSize} style={{ marginHorizontal: 3, color: "blue" }} /> : null}
+                {item.type === "Sale" ? <Icon name="coins" size={iconSize} style={{ marginHorizontal: 3, color: "orange" }} /> : null}
               </View>
 
               {/* Activity Type */}

@@ -196,6 +196,15 @@ const Wishlist = (props) => {
     return result;
   }, [griddata, search]);
 
+   let imageURi = (item) => {
+    if (item.image_path.startsWith('\thttps')) {
+      return item.image_path.split('\t')[1];
+    };
+    if (item.image_path.startsWith('https')) {
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
 
   return (
     <View style={MyStyles.container}>
@@ -348,7 +357,7 @@ const Wishlist = (props) => {
                   setIsZoomed(true);
                 }}>
                   <Image
-                    source={{ uri: `${item.url_image}${item.image_path}` }}
+                    source={{ uri: imageURi(item) }}
                     style={{ width: 50, height: 50, borderRadius: 5 }}
                   />
                 </Pressable>

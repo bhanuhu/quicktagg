@@ -7,4 +7,16 @@
 # For more details, see
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
+# react-native-reanimated
+-keep class com.swmansion.reanimated.** { *; }
+-keep class com.facebook.react.turbomodule.** { *; }
+
 # Add any project specific keep options here:
+
+# PDFBox - Ignore missing JP2Decoder class
+-dontwarn com.gemalto.jp2.**
+-keep class com.gemalto.jp2.** { *; }
+
+# Tom Roush PDFBox
+-keep class com.tom_roush.pdfbox.** { *; }
+-dontwarn com.tom_roush.pdfbox.**

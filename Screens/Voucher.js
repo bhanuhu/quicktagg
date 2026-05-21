@@ -5,6 +5,7 @@ import {
   View,
   FlatList,
   Alert,
+  TouchableOpacity,
 } from "react-native";
 
 import {
@@ -527,18 +528,11 @@ const VoucherForm = (props) => {
             />
           )}
 
-          {param.voucher_sms == "" ? (
+          {/* {param.voucher_sms == "" ? ( */}
             <TouchableRipple
-              onPress={() => {
-                if (param.voucher_type == "") {
-                  Alert.alert("select voucher type");
-                }
-                else {
-                  setvisibletemp(true);
-                }
-              }}
+              disabled
             >
-              <View style={{
+              <TouchableOpacity style={{
                 backgroundColor: "rgba(0,0,0,0)",
                 padding: 5,
                 borderColor: "gray",
@@ -547,22 +541,15 @@ const VoucherForm = (props) => {
                 borderRadius: 5,
                 marginVertical: 5,
               }}>
-                <Text style={{ textAlign: "center", top: 40, fontSize: 20 }}>Insert SMS Templete</Text>
+                <Text style={{ textAlign: "center", top: 40, fontSize: 20, color:'red' }}>Insert template from web only.</Text>
 
-                <List.Icon style={{ position: "absolute", bottom: 0, alignSelf: "flex-end" }} icon="pencil" color="#aaa" />
-              </View>
+                {/* <List.Icon style={{ position: "absolute", bottom: 0, alignSelf: "flex-end" }} icon="pencil" color="#aaa" /> */}
+              </TouchableOpacity>
 
             </TouchableRipple>
-          ) :
+          {/* ) :
             <TouchableRipple
-              onPress={() => {
-                if (param.voucher_type == "") {
-                  Alert.alert("select voucher type");
-                }
-                else {
-                  setvisibletemp(true);
-                }
-              }}
+              disabled
             >
               <View style={{
                 backgroundColor: "rgba(0,0,0,0)",
@@ -576,10 +563,10 @@ const VoucherForm = (props) => {
                 <Text style={{ textAlign: "center" }}>{param.voucher_sms}</Text>
 
                 {/* <List.Icon style={{ position: "absolute", bottom: 0, alignSelf: "flex-end" }} icon="pencil" color="#aaa" /> */}
-              </View>
+              {/* </View>
 
-            </TouchableRipple>
-          }
+            </TouchableRipple> 
+          } */}
           {/* <TouchableRipple
               onPress={() => {
                 setvisibletemp(true);

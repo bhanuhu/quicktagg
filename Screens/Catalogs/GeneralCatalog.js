@@ -240,6 +240,40 @@ const GeneralCatalog = (props) => {
 
 
   React.useEffect(() => {
+    if (tran_id == 0) {
+      setSelectedContacts([])
+      setSelectedProducts([])
+      setProductList([])
+      setProduct()
+      setRemarks()
+      setCustomerList([])
+      setContact()
+      setsubcategorylist([])
+      setparam({
+        subcategory_id: "",
+        min_amount: "",
+        max_amount: "",
+        title: "",
+        entry_no: "",
+        remarks: "",
+        customer_session_products: [],
+        customers: [],
+      })
+      postRequest(
+        "transactions/customer/customerListMob",
+        { branch_id: branchId },
+        userToken
+      ).then((resp) => {
+        if (resp.status == 200) {
+          setCustomerList(resp.data);
+        } else {
+          Alert.alert(
+            "Error !",
+            "Oops! \nSeems like we run into some Server Error"
+          );
+        }
+      });
+    }
     postRequest(
       "transactions/customer/session/getSubcategory",
       { branch_id: branchId },
@@ -262,22 +296,7 @@ const GeneralCatalog = (props) => {
         );
       }
     });
-    if (tran_id == 0) {
-      postRequest(
-        "transactions/customer/customerListMob",
-        { branch_id: branchId },
-        userToken
-      ).then((resp) => {
-        if (resp.status == 200) {
-          setCustomerList(resp.data);
-        } else {
-          Alert.alert(
-            "Error !",
-            "Oops! \nSeems like we run into some Server Error"
-          );
-        }
-      });
-    }
+
 
     postRequest(
       "transactions/customer/generalsession/preview",
@@ -286,8 +305,11 @@ const GeneralCatalog = (props) => {
     ).then((resp) => {
       if (resp.status == 200) {
         if (tran_id == 0) {
-          param.entry_no = resp.data[0].entry_no;
-          setparam({ ...param });
+          // Only set entry_no for new catalogs, don't override other cleared data
+          setparam(prev => ({
+            ...prev,
+            entry_no: resp.data[0].entry_no
+          }));
         } else {
           param.tran_id = resp.data[0].tran_id;
           param.title = resp.data[0].title;
@@ -345,7 +367,32 @@ const GeneralCatalog = (props) => {
     });
 
     setLoading(false);
-  }, []);
+  }, [tran_id]);
+
+  // Clear data when switching from edit mode to create mode
+  React.useEffect(() => {
+    if (tran_id == 0) {
+      setSelectedContacts([])
+      setSelectedProducts([])
+      setProductList([])
+      setProduct()
+      setRemarks()
+      setCustomerList([])
+      setContact()
+      setsubcategorylist([])
+      // Force clear the param state
+      setparam({
+        subcategory_id: "",
+        min_amount: "",
+        max_amount: "",
+        title: "",
+        entry_no: "",
+        remarks: "",
+        customer_session_products: [],
+        customers: [],
+      })
+    }
+  }, [tran_id]);
 
   const ProductList = () => {
     let data = {
@@ -369,6 +416,16 @@ const GeneralCatalog = (props) => {
     });
     setLoading(false);
   };
+
+  let imageURi = (item) => {
+    if (item.image_path.startsWith('\thttps')) {
+      return item.image_path.split('\t')[1];
+    };
+    if (item.image_path.startsWith('https')) {
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
 
   return (
     <ImageBackground
@@ -511,7 +568,9 @@ const GeneralCatalog = (props) => {
                       }}
                     >
                       <Card.Cover
-                        source={{ uri: item.url_image + "" + item.image_path }}
+                        source={{
+                          uri: imageURi(item)
+                        }}
                         style={{ width: 75, height: 75, borderRadius: 5 }}
                       />
 
@@ -674,9 +733,22 @@ const GeneralCatalog = (props) => {
                             setLoading(false);
                             setRemarks(!remarks)
                             console.log("Before navigating...");
-                            navigation.navigate("GeneralCatalogList");
                             console.log("After navigating...");
-
+                            setSelectedContacts([])
+                            setSelectedProducts([])
+                            setContact()
+                            setsubcategorylist([])
+                            setparam({
+                              subcategory_id: "",
+                              min_amount: "",
+                              max_amount: "",
+                              title: "",
+                              entry_no: "",
+                              remarks: "",
+                              customer_session_products: [],
+                              customers: [],
+                            })
+                            navigation.navigate("GeneralCatalogList");
                           }
                         });
 

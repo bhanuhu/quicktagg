@@ -36,7 +36,7 @@ const StockSalesList = (props) => {
 
   const Refresh = () => {
     postRequest(
-      "transactions/stockSales/browse_app",
+      "transactions/stockSales/browse",
       { search: "" },
       userToken
     ).then((resp) => {
@@ -57,9 +57,11 @@ const filteredData = griddata.filter((item) => {
   const title = item?.title?.toString().toLowerCase() || '';
   const date = item?.date?.toString().toLowerCase() || '';
   const customer_name = item?.customer_name?.toString().toLowerCase() || '';
+  const entry_no = item?.entry_no?.toString().toLowerCase() || '';
+
   return title.includes(searchTerm) ||
     date.includes(searchTerm) ||
-    customer_name.includes(searchTerm);
+    customer_name.includes(searchTerm) || entry_no.includes(searchTerm);
 });
 
 

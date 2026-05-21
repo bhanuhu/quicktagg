@@ -8,6 +8,7 @@ import {
   Modal,
   Portal,
   TouchableRipple,
+  FAB,
 } from 'react-native-paper';
 import MyStyles from '../../Styles/MyStyles';
 import { LineChart, PieChart } from 'react-native-chart-kit';
@@ -39,6 +40,7 @@ const Home = (props) => {
     service_graph: false,
     voucher_graph: false,
     video_call_graph: false,
+    sales_graph: false,
     missed_call_graph: false,
     stock_graph: false,
   });
@@ -238,7 +240,9 @@ const Home = (props) => {
   const [totalFollow, setTotalFollow] = useState(0);
   const [totalReq, setTotalReq] = useState(0);
   const [serviceData, setServiceData] = useState();
-
+  const [saleCount, setSaleCount] = useState(0);
+  const [saleTodayCount, setSaleTodayCount] = useState(0);
+  const [saleData, setSaleData] = useState([]);
   const [bannerVisible, setBannerVisible] = useState(true);
   const scrollTimeout = useRef(null);
 
@@ -293,6 +297,7 @@ const Home = (props) => {
         FeedbackCount().catch(handleApiError),
         SmsCount().catch(handleApiError),
         ServiceDetails().catch(handleApiError),
+        salesCart().catch(handleApiError),
         getBranchTypeAndFetchNotifications().catch(handleApiError),
       ]);
     } catch (error) {
@@ -344,7 +349,7 @@ const Home = (props) => {
       userToken
     ).then((resp) => {
       if (resp.status == 200) {
-
+        console.log("visits data", resp)
 
         figures.total_customer_visits = resp.data[0].total_customer_visits;
         figures.total_customer_estore = resp.data[0].total_customer_estore;
@@ -441,6 +446,38 @@ const Home = (props) => {
     });
   };
 
+  const salesCart = () => {
+    return postRequest(
+      "masters/dashboard/retailer/sales_cart",
+      {
+        branch_id: branchId,
+        from_date: param.from_date,
+        to_date: param.to_date,
+      },
+      userToken
+    ).then((resp) => {
+        console.log("sales",resp)
+
+      if (resp.status == 200) {
+        console.log("length", resp.data.length)
+        setSaleCount(resp.data.length);
+        // Filter today's sales using moment (same as Sales.js)
+        const today = moment().startOf('day');
+        const todaySales = resp.data.filter(item => {
+          const itemDate = moment(item.datetime).local().startOf('day');
+          return itemDate.isSame(today, 'day');
+        });
+        setSaleTodayCount(resp.data[0].today_sales_count);
+        setSaleData(resp.data);
+      } else {
+        Alert.alert(
+          "Error !",
+          "Oops! \nSeems like we run into some Server Error"
+        );
+      }
+    });
+  };
+
   const InterestAppointmentCount = () => {
 
     return postRequest(
@@ -522,11 +559,12 @@ const Home = (props) => {
       },
       userToken
     ).then((resp) => {
-      if (resp.status == 200) {
-        chartData1.chartDataLabels = [0];
+      chartData1.chartDataLabels = [0];
         chartData1.chartDataEstore = [0];
         chartData1.chartDataVisits = [0];
         chartData1.chartDataExhibition = [0];
+      if (resp.status == 200) {
+        
         for (const itemObj of resp.data) {
           chartData1.chartDataLabels.push(itemObj.date);
           chartData1.chartDataEstore.push(itemObj.estore);
@@ -869,6 +907,42 @@ const Home = (props) => {
     ],
     legend: ["Request", "Accept", "Done"], // optional
   };
+
+  // Calculate invoices per day from saleData
+  const saleChartData = React.useMemo(() => {
+    if (!saleData?.length) {
+      return { labels: [], data: [] };
+    }
+
+    // Group by date and count unique invoices (entry_no)
+    const dateMap = new Map();
+
+    saleData.forEach(item => {
+      const date = moment(item.datetime).format('YYYY-MM-DD');
+      if (!dateMap.has(date)) {
+        dateMap.set(date, new Set());
+      }
+      dateMap.get(date).add(item.entry_no);
+    });
+
+    // Sort dates and create arrays
+    const sortedDates = Array.from(dateMap.keys()).sort();
+    const labels = sortedDates.map(d => moment(d).format('DD/MM'));
+    const data = sortedDates.map(d => dateMap.get(d).size);
+
+    return { labels, data };
+  }, [saleData]);
+
+  const salegraphdata = {
+    labels: saleChartData.labels,
+    datasets: [
+      {
+        data: saleChartData.data,
+        color: (opacity = 1) => `rgba(236, 18, 120, ${opacity})`, // pink color matching button
+        strokeWidth: 2,
+      },
+    ],
+  };
   //-------------------------End--------------------------------//
   //---------------Missed Call Graph Data--------------------------//
   const MissedGraphFigures = () => {
@@ -960,7 +1034,7 @@ const Home = (props) => {
       },
       userToken
     ).then((resp) => {
-
+      console.log("response", resp)
       if (resp.status == 200) {
         noResChartData.chartDataLabels = [];
         noResChartData.chartDataEStore = [];
@@ -987,7 +1061,8 @@ const Home = (props) => {
         noResChartData.chartDataExhibition.push(exhibitionCount); // Exhibition count
         noResChartData.chartDataEStore.push(eStoreCount); // Other types count
       } else {
-        Alert.alert("Error !", "Oops! \nSeems like we ran into some Server Error");
+         // Other types count
+        // Alert.alert("Error !", "Oops! \nSeems like we ran into some Server Error");
       }
 
 
@@ -1027,21 +1102,21 @@ const Home = (props) => {
   const notresponsecustomerchartdata = [
     {
       name: "E-Store",
-      population: noResChartData.chartDataEStore,
+      population: noResChartData.chartDataEStore? noResChartData.chartDataEStore : [],
       color: "#BAABDA",
       legendFontColor: "#7F7F7F",
       legendFontSize: 15,
     },
     {
       name: "Visits",
-      population: noResChartData.chartDataVisit,
+      population: noResChartData.chartDataVisit? noResChartData.chartDataVisit :[],
       color: "#D6E5FA",
       legendFontColor: "#A68DAD",
       legendFontSize: 15,
     },
     {
       name: "Exhibition",
-      population: noResChartData.chartDataExhibition,
+      population: noResChartData.chartDataExhibition ? noResChartData.chartDataExhibition:[],
       color: "#84DFFF",
       legendFontColor: "#7F7F7F",
       legendFontSize: 15,
@@ -1401,16 +1476,15 @@ const Home = (props) => {
                     width: "50%",
                   }}> */}
                   <Button onPress={() => props.navigation.navigate("Appointment")} mode="contained" style={{
-                    backgroundColor: "#ec1278ff",
-                    width: "25%",
-                    color: '#fff',
-                    borderColor: "#FFF",
-                    borderWidth: 1,
-                    textAlign: 'center',
-                    marginVertical: 5,
-                    borderRadius: 18,
-                    marginLeft: 5
-                  }}>
+                      backgroundColor: "#ec1278ff",
+                      minWidth: 10,
+                      width:"50%",
+                      borderColor: "#FFF",
+                      borderWidth: 1,
+                      marginVertical: 5,
+                      borderRadius: 18,
+                      marginLeft: 5
+                    }}>
                     <Text style={{ color: '#fff', fontSize: 20 }}>{count_ap}</Text>
                   </Button>
                 </Pressable>
@@ -1582,7 +1656,108 @@ const Home = (props) => {
           </>
         )
         }
+          <LinearGradient
+          colors={["#F6356F", "#FF5F50"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{
+            marginHorizontal: 15,
+            borderRadius: 10,
+            padding: 0,
+            marginVertical: 5,
+          }}
+        >
+          <View>
+            <View
+              style={[
+                MyStyles.row,
+                {
+                  justifyContent: "center",
+                  borderBottomColor: "#FFF",
+                  borderBottomWidth: 1,
+                  marginHorizontal: 15,
+                },
+              ]}
+            >
+              <View style={{ flexGrow: 1 }}>
+                <Pressable onPress={() => props.navigation.navigate("Sales")}>
+                  {/* <Text style={{
+                    textAlign: "center",
+                    color: "#FFF",
+                    fontSize: 18,
+                    marginVertical: 5,
+                    width: "50%",
+                  }}> */}
+                  <Button
+                    onPress={() => props.navigation.navigate("Sales")}
+                    mode="contained"
+                    style={{
+                      backgroundColor: "#ec1278ff",
+                      minWidth: 10,
+                      width:"50%",
+                      borderColor: "#FFF",
+                      borderWidth: 1,
+                      marginVertical: 5,
+                      borderRadius: 18,
+                      marginLeft: 5
+                    }}
+                    labelStyle={{ color: '#fff', fontSize: 18, fontWeight: 'bold' }}
+                  >
+                    {String(saleTodayCount || 0)}
+                  </Button>
+                </Pressable>
+              </View>
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: "#FFF",
+                  fontSize: 18,
+                  marginVertical: 5,
+                  width: "50%",
+                  width: "50%",
+                  fontWeight: 'bold',
+                  marginLeft:'-50'
+                }}
+              >
+                Sales
+              </Text>
+              <IconButton
+                icon="trending-up"
+                iconColor="white"
+                style={{
+                  backgroundColor: "#F6356F",
+                  flex: 1,
+                  borderColor: "#FFF",
+                  borderWidth: 1,
+                }}
+                onPress={() =>
+                  setVisible({
+                    ...visible,
+                    sales_graph: !visible.sales_graph,
+                  })
+                }
+              />
+            </View>
 
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-evenly",
+                marginBottom: 10,
+              }}
+            >
+              <View style={{ alignItems: "center" }}>
+                <Text style={{ color: "#FFF", fontSize: 16, fontWeight: 'bold' }}>
+                  {saleCount}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </LinearGradient>
+        <SalesGraphView
+          visible={visible.sales_graph}
+          data={salegraphdata}
+        />
 
         <LinearGradient
           colors={["#F6356F", "#FF5F50"]}
@@ -1673,6 +1848,8 @@ const Home = (props) => {
           visible={visible.voucher_graph}
           data={vouchergraphdata}
         />
+
+      
 
         <LinearGradient
           colors={["#F6356F", "#FF5F50"]}
@@ -2159,7 +2336,25 @@ const Home = (props) => {
           </View>
         </LinearGradient>
       </ScrollView>
-      <PromoBanner visible={bannerVisible} userToken={userToken} branchId={branchId} />
+      <PromoBanner visible={bannerVisible} userToken={userToken} branchId={branchId} branchType={branchType}/>
+
+      {/* Floating Action Button */}
+      <FAB
+        style={{
+          position: 'absolute',
+          margin: 16,
+          right: 0,
+          bottom: '10%',
+          backgroundColor: MyStyles.primaryColor.backgroundColor,
+        }}
+        icon="plus"
+        color="#fff"
+        onPress={() => {
+          props.navigation.navigate('NewSale');
+        }}
+      />
+
+      
     </View>
   );
 };
@@ -2496,6 +2691,48 @@ const VideoCallGraphView = ({ visible = false, data }) => {
   return null;
 };
 
+const SalesGraphView = ({ visible = false, data }) => {
+  const screenWidth = Dimensions.get("window").width - 60;
+
+  const chartConfig = {
+    backgroundGradientFrom: "#000",
+    backgroundGradientFromOpacity: 0,
+    backgroundGradientTo: "#000",
+    backgroundGradientToOpacity: 0,
+    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    strokeWidth: 2, // optional, default 3
+    barPercentage: 0.5,
+    useShadowColorFromDataset: true, // optional
+  };
+
+  if (visible) {
+    return (
+      <View
+        style={{
+          backgroundColor: "#f0f0f0",
+          marginHorizontal: 15,
+          borderRadius: 10,
+          padding: 10,
+          marginVertical: 10,
+        }}
+      >
+        <LineChart
+          data={data}
+          width={screenWidth}
+          height={220}
+          verticalLabelRotation={30}
+          segments={4}
+          chartConfig={chartConfig}
+          bezier
+        />
+      </View>
+    );
+  }
+
+  return null;
+};
+
+
 const MissedCallGraphView = ({ visible = false, data }) => {
   const screenWidth = Dimensions.get("window").width - 60;
 
@@ -2566,6 +2803,7 @@ const HomeStack = (props) => {
               notifications={notifications}
               title={userName}
               refreshKey={refreshKey}
+              // userToken={userToken}
               onRefresh={handleRefresh}
               route={{
                 ...props.route,

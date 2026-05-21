@@ -13,7 +13,7 @@ import { MoveDown } from 'lucide-react-native';
 
 const { width, height } = Dimensions.get('window');
 
-const PromoBanner = ({ visible, branchId, userToken }) => {
+const PromoBanner = ({ visible, branchId, userToken,branchType }) => {
     // if (!visible) return <></>;
     const [isDrawerVisible, setDrawerVisible] = useState(false);
     const [param, setParam] = useState({
@@ -198,8 +198,12 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
         formData.append("mobiles", param.mobiles);
         formData.append("bb_id", param.bb_id);
 
-        if (param.file) {
-            formData.append("file", param.file);
+        if (param.file && param.file.uri) {
+            formData.append("file", {
+                uri: param.file.uri,
+                type: param.file.type,
+                name: param.file.name
+            });
         }
 
 
@@ -215,6 +219,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                     },
                 }
             );
+            console.log(param);
             console.log("Whatsapp response", response)
             if (response.status === 200) {
                 setDrawerVisible(false);
@@ -228,8 +233,9 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                 });
                 setSelectedCustomers([]);
                 setCount(0);
+                setImage({ uri: "" });
+                setParam(prev => ({ ...prev, file: "" }));  
 
-                setgridData([...gridData, response.data]);
             } else {
                 Alert.alert(
                     "Error!",
@@ -369,6 +375,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 
                     </View>
                 </TouchableOpacity>
+                {branchType === 'Jeweller' ? (
                 <TouchableOpacity
                     onPress={openRateModal}
                     style={[styles.promoteContainer, { justifyContent: 'center', alignItems: 'center' }]}
@@ -392,6 +399,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                         </Text>
                     </View>
                 </TouchableOpacity>
+            ) : null}
 
 
             </View>
@@ -549,7 +557,7 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
 
                                 {/* Preview Message */}
                                 <Text style={styles.label}>
-                                    Dear <Text style={styles.red}>Member</Text>, Thank you for choosing <Text style={styles.red}>{param.branchName || 'BRANCH NAME'}</Text>.
+                                    Dear <Text style={styles.red}>Member</Text>, This is to inform 
                                 </Text>
 
                                 {/* Message 1 */}
@@ -564,20 +572,22 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                 <Text style={styles.counter}>{param.message.length}/200</Text>
 
                                 {/* Contact On */}
-                                <View style={{ flexDirection: 'row', marginVertical: 8 }}>
-                                    <Text style={styles.label}>Kindly contact us </Text>
+                              
+                                  
                                     <TextInput
-                                        style={{ borderBottomColor: '#333', width: 100, height: 35, marginTop: 2 }}
-                                        placeholder="Type here..."
-                                        value={param.contact_us}
-                                        keyboardType="numeric"
-                                        onChangeText={(text) => setParam(prev => ({ ...prev, contact_us: text }))}
-                                        maxLength={200}
-                                    />
-                                    <Text style={styles.label}> for any assistance.</Text>
-                                </View>
+                                    style={styles.textArea}
+                                    placeholder="Type here..."
+                                    multiline
+                                    value={param.contact_us}
+                                    onChangeText={(text) => setParam(prev => ({ ...prev, contact_us: text }))}
+                                    maxLength={200}
+                                />
+                                <Text style={styles.counter}>{param.message.length}/200</Text>
 
                                 {/* Message 2 */}
+                                <Text style={styles.label}>
+                                    For assistance, please contact
+                                </Text>
                                 <TextInput
                                     style={styles.textArea}
                                     placeholder="Type here..."
@@ -605,7 +615,11 @@ const PromoBanner = ({ visible, branchId, userToken }) => {
                                             setImage({ uri: result.uri });
                                             setParam(prev => ({
                                                 ...prev,
-                                                file: "image-" + moment().format("YYYYMMDD-hhmmss") + ".jpg"
+                                                file: {
+                                                    uri: result.uri,
+                                                    type: result.type,
+                                                    name: result.fileName || "image-" + moment().format("YYYYMMDD-hhmmss") + ".jpg"
+                                                }
                                             }));
                                         }}
                                     />

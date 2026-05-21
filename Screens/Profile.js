@@ -26,6 +26,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import Icon_FA from 'react-native-vector-icons/FontAwesome';
 import Icon2 from 'react-native-vector-icons/MaterialCommunityIcons';
 import Icon3 from 'react-native-vector-icons/MaterialCommunityIcons';
+import Icon4 from "react-native-vector-icons/FontAwesome6";
 import IconDot from "react-native-vector-icons/MaterialCommunityIcons";
 import MyStyles from '../Styles/MyStyles';
 import { FlatList } from 'react-native-gesture-handler';
@@ -47,6 +48,7 @@ import DropDown from '../Components/DropDown';
 import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 import RNPickerSelect from 'react-native-picker-select';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const Profile = (props) => {
   const Tab = createMaterialTopTabNavigator();
   const { userToken, customer_id, customer_mobile, missCallUser, branchId } = props.route.params;
@@ -76,7 +78,25 @@ const Profile = (props) => {
   });
   const [isShow, setIsShow] = useState(true)
   const [totalPoint, setTotalPoint] = useState(0)
+  // Replace the current getBranchType and its usage with this:
+  const [branchType, setBranchType] = useState(null);
 
+  useEffect(() => {
+
+    postRequest("masters/branch/preview", { branch_id: branchId }, userToken).then((resp) => {
+
+      if (resp) {
+        console.log("Branch Type:", resp.branch_type);
+        setBranchType(resp.branch_type)
+      } else {
+        Alert.alert(
+          "Error !",
+          "Oops! \nSeems like we run into some Server Error"
+        );
+      }
+    });
+
+  }, [])
 
   React.useEffect(() => {
     let data = { customer_id: customer_id };
@@ -127,7 +147,15 @@ const Profile = (props) => {
       }
     );
   }, [customer_id]);
-
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
+  }
 
 
   return (
@@ -191,13 +219,13 @@ const Profile = (props) => {
       <View style={{ margin: 10 }}>
         <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
           <View>
-        <Text style={{ fontSize: 18, fontWeight: "bold" }}>
+            <Text style={{ fontSize: 18, fontWeight: "bold" }}>
 
-          {CapitalizeName(param.full_name)} {(param.gender == null ? "" : (param.gender == "male" ? "♂️" : "♀️")) + "      "}
-          <Text style={{ color: "green" }}>{CapitalizeName(param.category_name)}</Text>
-        </Text>
-      </View>
-        <Text style={{ fontSize: 18, fontWeight: "bold", marginHorizontal: 10, marginVertical: 5 }}>{totalPoint}</Text>
+              {CapitalizeName(param.full_name)} {(param.gender == null ? "" : (param.gender == "male" ? "♂️" : "♀️")) + "      "}
+              <Text style={{ color: "green" }}>{CapitalizeName(param.category_name)}</Text>
+            </Text>
+          </View>
+          <Text style={{ fontSize: 18, fontWeight: "bold", marginHorizontal: 10, marginVertical: 5 }}>{totalPoint}</Text>
         </View>
 
         <View style={{ flexDirection: "row", justifyContent: 'space-between' }}>
@@ -282,7 +310,7 @@ const Profile = (props) => {
 
           uppercase={false}
           style={{ borderRadius: 5, alignItems: "center", justifyContent: "center" }}
-          labelStyle={{ color: "black" , alignItems: "center"}}
+          labelStyle={{ color: "black", alignItems: "center" }}
           color='black'
           onPress={() =>
             props.navigation.navigate("CustomerVoucherList", {
@@ -322,13 +350,30 @@ const Profile = (props) => {
           }}
 
         />
+
         <Tab.Screen
-          name='Exhibition'
-          children={() => <Exhibition userToken={userToken} customer_id={param.customer_id} />}
+          name='Sales'
+          children={() => <Sales userToken={userToken} customer_id={param.customer_id} />}
           options={{
             tabBarIcon: ({ focused }) => (
-              <Icon2 name="cog-outline" size={20} color={focused ? '#00eeff' : '#000'} />
+              <Icon4 name="coins" size={20} color={focused ? 'orange' : '#000'} />
             )
+          }}
+
+        />
+
+        <Tab.Screen
+          name='Exhibition'
+          children={() => <Exhibition userToken={userToken} customer_id={param.customer_id} branchId={branchId} />}
+          options={{
+            tabBarIcon: ({ focused }) => (
+              (branchType == "2-Vehicle") ? (
+                <Icon2 name="cog-outline" size={20} color={focused ? '#00eeff' : '#000'} />
+              ) : (
+                <Icon2 name="transit-transfer" size={20} color={focused ? '#00eeff' : '#000'} />
+              )
+            )
+
           }}
 
         />
@@ -367,7 +412,7 @@ const Wishlist = ({ userToken, customer_id }) => {
   const [loading, setLoading] = useState(true);
   const [wishlist, setwishlist] = useState([]);
   const [param, setparam] = useState({
-    from_date: moment().subtract(7, 'days').format('YYYY-MM-DD'),
+    from_date: moment().subtract(7, 'year').format('YYYY-MM-DD'),
     to_date: moment().format('YYYY-MM-DD'),
   });
 
@@ -382,7 +427,7 @@ const Wishlist = ({ userToken, customer_id }) => {
           item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
 
-
+        console.log("filtered", filteredData)
         setwishlist(filteredData);
 
       } else {
@@ -404,11 +449,10 @@ const Wishlist = ({ userToken, customer_id }) => {
   React.useEffect(() => {
     postRequest("masters/dashboard/browse_cart", { from_date: param.from_date, to_date: param.to_date }, userToken).then((resp) => {
       if (resp.status == 200) {
-
         const filteredData = resp.data.filter(
           item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
-
+        // console.log("wishlist dta", filteredData)
 
         setwishlist(filteredData);
 
@@ -458,6 +502,16 @@ const Wishlist = ({ userToken, customer_id }) => {
     }
   };
 
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
+  }
+
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>  {/* Safe full screen container */}
@@ -498,8 +552,9 @@ const Wishlist = ({ userToken, customer_id }) => {
                       })
                     }
                   >
+                    {item?
                     <Image
-                      source={{ uri: item.url_image + item.image_path }}
+                      source={{ uri: imageURi(item) }}
                       style={{
                         width: '100%',
                         height: 120,
@@ -507,7 +562,7 @@ const Wishlist = ({ userToken, customer_id }) => {
                         borderTopRightRadius: 10,
                         zIndex: -1
                       }}
-                    />
+                    />:""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -516,7 +571,7 @@ const Wishlist = ({ userToken, customer_id }) => {
                       alignItems: 'center'
                     }}>
                       <Text numberOfLines={1} style={{ color: "#333", fontWeight: 'bold' }}>
-                        {item.product_name.length < 13
+                        {item?.product_name?.length < 13
                           ? CapitalizeName(item.product_name)
                           : `${CapitalizeName(item.product_name).substring(0, 10)}...`}
                       </Text>
@@ -569,7 +624,7 @@ const Uploaded = ({ userToken, customer_id }) => {
       if (resp.status == 200) {
         // console.log()
         const filteredData = resp.data.filter(
-          item => item.customer_id === customer_id && (item.added_from == "Online" 
+          item => item.customer_id === customer_id && (item.added_from == "Online"
             || item.added_from == "trial" || item.added_from == "exhibition"
           )
         );
@@ -599,10 +654,19 @@ const Uploaded = ({ userToken, customer_id }) => {
         groups[dateKey] = [];
       }
       groups[dateKey].push(item);
-      console.log(`grouped uploaded -> ${JSON.stringify(groups)}`)
+      // console.log(`grouped uploaded -> ${JSON.stringify(groups)}`)
       return groups;
     }, {});
 
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>  {/* Safe full screen container */}
@@ -641,8 +705,9 @@ const Uploaded = ({ userToken, customer_id }) => {
                       })
                     }
                   >
+                    {item?
                     <Image
-                      source={{ uri: item?.url_image + item?.image_path }}
+                      source={{ uri: imageURi(item) }}
                       style={{
                         width: '100%',
                         height: 120,
@@ -650,7 +715,7 @@ const Uploaded = ({ userToken, customer_id }) => {
                         borderTopRightRadius: 10,
                         zIndex: -1
                       }}
-                    />
+                    />:""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -694,14 +759,178 @@ const Uploaded = ({ userToken, customer_id }) => {
 
 };
 
-const Exhibition = ({ userToken, customer_id }) => {
+const Sales = ({ userToken, customer_id }) => {
+  // const { userToken, customer_id } = props.route.params;
+
+
+  const screenWidth = Dimensions.get('window').width;
+  const cardWidth = (screenWidth / 3) - 20;  // 3 cards per row, minus margins
+  const [loading, setLoading] = useState(true);
+  const [uploaded, setUploaded] = useState([]);
+  const [param, setparam] = useState({
+    from_date: moment().subtract(7, 'days').format('YYYY-MM-DD'),
+    to_date: moment().format('YYYY-MM-DD'),
+  });
+
+  const navigation = useNavigation();
+
+  // console.log(`customer id in uploaded -> ${customer_id}`)
+  // console.log(uploaded)
+
+
+  React.useEffect(() => {
+    postRequest("masters/dashboard/retailer/sales_cart", { from_date: param.from_date, to_date: param.to_date }, userToken).then((resp) => {
+      // console.log("retail status",resp.status)
+
+      if (resp.status == 200) {
+        // console.log("retail",resp)
+
+        // console.log("data", resp.data)
+        console.log("Sales", resp.data)
+        const filterByCustomerId = (data, customerId) => {
+          if (!customerId || customerId === '') {
+            return data;
+          }
+          return data.filter(customer => customer.customer_id == customerId
+            // console.log(customer.customer_name)
+          );
+        };
+
+        const filteredCustomers = filterByCustomerId(resp.data, customer_id);
+        console.log("filtered customer", filteredCustomers);
+        setUploaded(filteredCustomers);
+
+      } else {
+        Alert.alert(
+          "Error !",
+          "Oops! \nSeems like we run into some Server Error 3"
+        );
+      }
+      setLoading(false);
+    });
+
+  }, [customer_id]);
+
+
+  // Group Uploaded items by date
+  const groupedUploaded = uploaded
+    .slice()
+    .sort((a, b) => new Date(b.datetime) - new Date(a.datetime))
+    .reduce((groups, item) => {
+      const dateKey = moment(item.datetime).format('MMM DD, YYYY');
+      if (!groups[dateKey]) {
+        groups[dateKey] = [];
+      }
+      groups[dateKey].push(item);
+      // console.log(`sale grouped uploaded -> ${JSON.stringify(groups)}`)
+      return groups;
+    }, {});
+
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
+  }
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>  {/* Safe full screen container */}
+      <Loading isloading={loading} />
+
+
+      <ScrollView contentContainerStyle={{ padding: 10 }}>
+        <View style={{ flexDirection: 'column' }}>
+          {Object.keys(groupedUploaded).map((dateKey, index) => (
+            <View key={dateKey + index}>
+              <Text style={{ fontSize: 16, fontWeight: 'bold', marginVertical: 10, color: '#333' }}>
+                {dateKey}
+              </Text>
+
+              <View
+                style={{
+                  flexDirection: 'row',
+                  flexWrap: 'wrap',
+                  justifyContent: 'flex-start',
+                }}
+              >
+                {groupedUploaded[dateKey].map((item, index) => (
+                  <Card
+                    key={item?.customer_id + index}
+                    style={{
+                      width: cardWidth,
+                      margin: 5,
+                      borderRadius: 10,
+                      overflow: 'hidden',
+                      backgroundColor: '#fff'
+                    }}
+                    onPress={() =>
+                      navigation.navigate("ProfileProductsPreview", {
+                        product_id: item.product_id,
+                        item,
+                        entryno: item.entry_no,
+                      })
+                    }
+                  >{
+                    item?
+                  
+                    <Image
+                      source={{ uri: imageURi(item) }}
+                      style={{
+                        width: '100%',
+                        height: 120,
+                        borderTopLeftRadius: 10,
+                        borderTopRightRadius: 10,
+                        zIndex: -1
+                      }}
+                    />:""}
+                    <View style={{
+                      padding: 5,
+                      paddingVertical: 10,
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <Text numberOfLines={1} style={{ color: "#333", fontWeight: 'bold' }}>
+                        {item?.product_name?.length < 13
+                          ? CapitalizeName(item?.product_name)
+                          : `${CapitalizeName(item?.product_name).substring(0, 10)}...`}
+                      </Text>
+
+                      <IconDot
+                        name="brightness-1"
+                        size={10}
+                        style={{
+                          marginHorizontal: 2,
+                          color: 'green',
+                          alignSelf: "center",
+                        }}
+                      />
+                    </View>
+                  </Card>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView >
+
+
+    </View >
+  );
+
+};
+
+const Exhibition = ({ userToken, customer_id, branchId }) => {
   const screenWidth = Dimensions.get('window').width;
   const cardWidth = (screenWidth / 3) - 20;  // 3 cards per row, minus margins
   const [loading, setLoading] = useState(true);
   const [serviceList, setServiceList] = useState([]);
   const [exhibition, setExhibition] = useState([]);
   const [param, setparam] = useState({
-    from_date: moment().subtract(7, 'days').format('YYYY-MM-DD'),
+    from_date: moment().subtract(7, 'year').format('YYYY-MM-DD'),
     to_date: moment().format('YYYY-MM-DD'),
   });
 
@@ -711,14 +940,16 @@ const Exhibition = ({ userToken, customer_id }) => {
     setLoading(true);
 
     // First API for exhibition/trial products
-    postRequest("masters/dashboard/browse_cart", { from_date: param.from_date, to_date: param.to_date}, userToken)
+    postRequest("masters/dashboard/browse_cart", { branch_id: branchId, from_date: param.from_date, to_date: param.to_date, search: "" }, userToken)
       .then((resp) => {
         if (resp.status === 200) {
+          console.log("exhibition", resp)
           const filteredData = resp.data.filter(
             item =>
               item.customer_id === customer_id &&
               (item.added_from === 'trial' || item.added_from === 'exhibition')
           );
+          console.log("filred", filteredData)
           setExhibition(filteredData);
         } else {
           Alert.alert("Error !", "Oops! \nSeems like we ran into some Server Erroraa");
@@ -740,9 +971,9 @@ const Exhibition = ({ userToken, customer_id }) => {
     )
       .then((resp) => {
         if (resp.status === 200 && Array.isArray(resp.data)) {
-          console.log(`service response --------> ${JSON.stringify(resp.data)}`)
+          // console.log(`service response --------> ${JSON.stringify(resp.data)}`)
 
-          console.log('api',resp)
+          console.log('api', resp)
           const filtered = resp.data.filter(item => item.customer_id === customer_id);
           setServiceList(filtered);
         } else {
@@ -754,7 +985,7 @@ const Exhibition = ({ userToken, customer_id }) => {
 
 
   // Group Exhibition items by date
-  const groupedExhibition = serviceList
+  const groupedExhibition = exhibition
     .slice()
     .sort((a, b) => new Date(b.updated_date) - new Date(a.updated_date))
     .reduce((groups, item) => {
@@ -765,27 +996,36 @@ const Exhibition = ({ userToken, customer_id }) => {
       groups[dateKey].push(item);
       return groups;
     }, {});
-  console.log('group', groupedExhibition)
+  // console.log('group', groupedExhibition)
 
   const getStatusColor = (status) => {
-  const normalized = (status || '').trim().toLowerCase();
+    const normalized = (status || '').trim().toLowerCase();
 
-  switch (normalized) {
-    case 'done':
-      return 'green';
-    case 'overdue':
-      return 'gray';
-    case 'reject':
-      return 'red';
-    case 'pending':
-    case 'pending...':
-      return '#fbb534'; 
-    case 'due':
-      return 'purple';
-    default:
-      return '#000'; 
+    switch (normalized) {
+      case 'done':
+        return 'green';
+      case 'overdue':
+        return 'gray';
+      case 'reject':
+        return 'red';
+      case 'pending':
+      case 'pending...':
+        return '#fbb534';
+      case 'due':
+        return 'purple';
+      default:
+        return '#000';
+    }
+  };
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
   }
-};
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -823,23 +1063,24 @@ const Exhibition = ({ userToken, customer_id }) => {
                           next_service: item.next_service,
                           last_service_date: item.last_service_date,
                           color: item.color,
-                          payment: item. payment,
+                          payment: item.payment,
                           vichle_number: item.vichle_number
                         }
                       })
                     }
                   >
                     {/* Image */}
+                    {item?
                     <Image
-                    // uri: item.url_image + item.image_path 
-                      source={{uri: `https://api.quicktagg.com/CustomerUploads/${item.image}`}}
+                      // uri: item.url_image + item.image_path 
+                      source={{ uri: imageURi(item) }}
                       style={{
                         width: '100%',
                         height: 120,
                         borderTopLeftRadius: 10,
                         borderTopRightRadius: 10,
                         zIndex: -1
-                      }}/>
+                      }} />:""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -848,7 +1089,7 @@ const Exhibition = ({ userToken, customer_id }) => {
                       alignItems: 'center'
                     }}>
                       <Text numberOfLines={1} style={{ color: "#333", fontWeight: 'bold' }}>
-                         {item.category || "No Category"}
+                        {item.category || "No Category"}
                       </Text>
 
                       <IconDot
@@ -908,8 +1149,8 @@ const VideoCallRequest = ({ userToken, customer_id, customer_mobile }) => {
       { customer_id: customer_id },
       userToken
     ).then((resp) => {
-      console.log('API Response:',resp); // Log full response
-      
+      // console.log('API Response:', resp); // Log full response
+
       if (resp && resp.status === 200 && resp.data && resp.data[0] && resp.data[0].vcalls) {
         setvcallslist(resp.data[0].vcalls);
       } else {
@@ -920,7 +1161,7 @@ const VideoCallRequest = ({ userToken, customer_id, customer_mobile }) => {
           dataLength: resp?.data?.length,
           hasVcalls: !!resp?.data?.[0]?.vcalls
         });
-        
+
       }
       setLoading(false);
     }).catch(error => {
@@ -1401,13 +1642,10 @@ const CallRequest = ({ userToken, customer_id, customer_mobile, miss_call_user }
       { customer_id: customer_id },
       userToken
     ).then((resp) => {
-      console.log(`miss calls -> ${JSON.stringify(resp)}`)
       if (resp.status == 200) {
         let param = [];
         param = resp.data[0].mcalls;
-        console.log(`miss calls -> `)
         setmisscallslist(param);
-        console.log(`miss calls -> ${JSON.stringify(param)}`)
 
 
       } else {
@@ -1788,7 +2026,7 @@ const CallRequest = ({ userToken, customer_id, customer_mobile, miss_call_user }
                   getRequest(
                     "https://api.quicktagg.com/public/call?mobile=" + newrequestParam.mobile + "&DidNum=" + miss_call_user + "")
                     .then((resp) => {
-                      console.log(`missed call data -> ${JSON.stringify(resp)}`)
+                      // console.log(`missed call data -> ${JSON.stringify(resp)}`)
                       if (resp.status == 200) {
                         Refresh();
                         setVisible2(false);
@@ -1811,7 +2049,7 @@ const CustomerVoucherList = (props) => {
   const { userToken, customer_id } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [griddata, setgriddata] = useState([]);
- const [totalPoint,setTotalPoint ] = useState(0);
+  const [totalPoint, setTotalPoint] = useState(0);
   const Tab = createMaterialTopTabNavigator();
 
   React.useEffect(() => {
@@ -1844,7 +2082,7 @@ const CustomerVoucherList = (props) => {
     };
     postRequest("customervisit/getCustomerPointList", temparam, userToken).then(
       (data) => {
-        console.log("points - ", data.data[0].total_points)
+        // console.log("points - ", data.data[0].total_points)
         setTotalPoint(data.data[0].total_points);
       }
     );
@@ -1852,7 +2090,7 @@ const CustomerVoucherList = (props) => {
 
   return (
     <View style={MyStyles.container}>
-      {console.log("customer points", props)}
+      {/* {console.log("customer points", props)} */}
       <Tab.Navigator
         screenOptions={{
           tabBarStyle: { backgroundColor: "#ffba3c" },
@@ -1867,7 +2105,7 @@ const CustomerVoucherList = (props) => {
         <Tab.Screen
           name="Category"
           children={() => <CustomerPoints {...props} />}
-          options={{ title: `Points ${totalPoint===0?'':`(${totalPoint})`}` }}
+          options={{ title: `Points ${totalPoint === 0 ? '' : `(${totalPoint})`}` }}
           initialParams={props.route.params}
         />
 
@@ -1877,7 +2115,7 @@ const CustomerVoucherList = (props) => {
 };
 
 const ProfileProductsPreview = (props) => {
-  const { userToken, product_id, item } = props.route.params;
+  const { userToken, product_id, item, entryno } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [param, setparam] = useState({
     product_id: "",
@@ -1908,7 +2146,7 @@ const ProfileProductsPreview = (props) => {
 
   const [sortedList, setSortedList] = useState({});
 
-  console.log(remarks)
+  // console.log(remarks)
 
 
   useEffect(() => {
@@ -1919,7 +2157,7 @@ const ProfileProductsPreview = (props) => {
       from: item.type
     }, userToken)
       .then((resp) => {
-        console.log("Full API Response:", JSON.stringify(resp.data, null, 2));
+        // console.log("Full API Response:", JSON.stringify(resp.data, null, 2));
 
         if (resp.status === 200 && Array.isArray(resp.data)) {
           setRemarks(resp.data); // Because resp.data *is* the array
@@ -1941,10 +2179,11 @@ const ProfileProductsPreview = (props) => {
     let data = { product_id: product_id };
     if (data != 0) {
       postRequest("masters/product/preview", data, userToken).then((resp) => {
-        console.log(`remarks -> ${JSON.stringify(resp)}`)
-        console.log(`remarks -> ${data}`)
+        // console.log(`remarks -> ${JSON.stringify(resp)}`)
+        // console.log(`remarks -> ${data}`)
 
         if (resp.status == 200) {
+
           console.log(`remarks -> ${JSON.stringify(resp.data)}`)
           setparam({
             product_id: resp.data[0].product_id,
@@ -1989,6 +2228,15 @@ const ProfileProductsPreview = (props) => {
 
     setLoading(false);
   }, [product_id]);
+  let imageURi = (item) => {
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url_image + "" + item?.image_path;
+  }
 
   return (
     product_id != 0 ?
@@ -2001,8 +2249,23 @@ const ProfileProductsPreview = (props) => {
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
                   {CapitalizeName(param?.product_name)}
                 </Text>
+                
+
               )
             }
+            {entryno?
+            <TouchableOpacity 
+              onPress={() => {
+                if (item?.bill_pdf) {
+                  Linking.openURL('https://api.quicktagg.com/bills/' + item.bill_pdf);
+                }
+              }}
+            >
+              <Text style={{ fontWeight: "bold", fontSize: 20, color: '#007AFF' }}>
+                {entryno}
+              </Text>
+            </TouchableOpacity>:""
+}
             <MedalIcon
               name="medal"
               size={25}
@@ -2017,7 +2280,7 @@ const ProfileProductsPreview = (props) => {
             />
           </View>
 
-          <View>
+          <View style={{flexDirection:'row', justifyContent:'space-between', marginTop:4}}>
             {
               item?.subcategory_name && (
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
@@ -2027,12 +2290,15 @@ const ProfileProductsPreview = (props) => {
 
             }
 
-            {item?.appointment_date !== "N/A" && (
-              <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', backgroundColor: MyStyles.primaryColor.backgroundColor, borderRadius: 2, marginBottom: 10 }}>
-                <Text style={{ fontSize: 12, color: "#000" }}>
-                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+            {item?.datetime !== "N/A" && (
+              <View style={{ borderWidth:1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2 }}>
+                <Text style={{ fontSize: 12, color: "#000", textAlign:'right' }}>
+                  {moment(item?.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                </Text>
+
                   {"\n"}
-                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  <Text style={{ fontSize: 12, color: "#000" }}>
+                  {moment(item?.datetime, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
                 </Text>
               </View>
             )}
@@ -2040,7 +2306,7 @@ const ProfileProductsPreview = (props) => {
 
           {
             param?.product_code && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
+              <Text style={{ fontSize: 15, marginTop: 5 }}>
                 <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{param?.product_code}
               </Text>
             )
@@ -2105,16 +2371,17 @@ const ProfileProductsPreview = (props) => {
               productImages.map((resp, index) => {
                 return (
                   <View key={index}>
+                    {item?
                     <Image
-                      source={{ uri: resp.url + "" + resp.image_path }}
+                      source={{ uri: imageURi(resp) }}
                       style={[{ height: '100%', borderRadius: 5, resizeMode: 'contain' }]}
-                    />
+                    />:""}
                   </View>
                 );
               })) :
               (<Image
                 source={require("../assets/upload.png")}
-                style={[{ height: '100%', borderRadius: 5 , objectFit: 'contain' }]}
+                style={[{ height: '100%', borderRadius: 5, objectFit: 'contain' }]}
               />)}
           </Swiper>
         </View>
@@ -2336,20 +2603,20 @@ const ProfileProductsPreview = (props) => {
                 }
 
                 setLoading(true);
-                
+
                 // Construct the full image URL
-                const imageUrl = `${item.url_image.replace(/\/+$/, '')}/${item.image_path.replace(/^\/+/, '')}`;
-                
+                const imageUrl = `${item?.url_image.replace(/\/+$/, '')}/${item?.image_path.replace(/^\/+/, '')}`;
+
                 // Create a temporary file path with a unique name
                 const fileName = `share_${Date.now()}.jpg`;
                 const fileUri = `${RNFS.CachesDirectoryPath}/${fileName}`;
-                
+
                 // Download the image
                 const response = await RNFS.downloadFile({
                   fromUrl: imageUrl,
                   toFile: fileUri,
                 }).promise;
-                
+
                 // Share the image
                 await Share.open({
                   url: `file://${fileUri}`,
@@ -2357,12 +2624,12 @@ const ProfileProductsPreview = (props) => {
                   title: item.product_name || 'Share Image',
                   failOnCancel: false,
                 });
-                
+
                 // Clean up the temporary file after a delay
                 setTimeout(() => {
                   RNFS.unlink(fileUri).catch(console.warn);
                 }, 10000);
-                
+
               } catch (error) {
                 if (error.message !== 'User did not share') {
                   console.error('Sharing failed:', error);
@@ -2377,10 +2644,11 @@ const ProfileProductsPreview = (props) => {
             }}
           />
           <View>
+            {item?
             <Image
               source={{ uri: item?.url_image + "" + item?.image_path }}
-              style={[{ height: "100%", width: "100%", borderRadius: 5 , resizeMode: 'contain' }]}
-            />
+              style={[{ height: "100%", width: "100%", borderRadius: 5, resizeMode: 'contain' }]}
+            />:""}
           </View>
         </View>
         <View>
@@ -2721,7 +2989,7 @@ const ProfileProductsPreview = (props) => {
 };
 
 const CustomerRedeem = (props) => {
-  const { userToken, customer_id, branchId , search } = props.route.params;
+  const { userToken, customer_id, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(true);
   const [griddata, setgriddata] = useState([]);
   const [originalGridData, setOriginalGridData] = useState([]);
@@ -2739,11 +3007,11 @@ const CustomerRedeem = (props) => {
       setLoading(true);
       const temparam = { customer_id };
       const resp = await postRequest(
-        "customervisit/getCustomerVoucherListByCustomer_id", 
-        temparam, 
+        "customervisit/getCustomerVoucherListByCustomer_id",
+        temparam,
         userToken
       );
-      
+
       if (resp?.status === 200) {
         setOriginalGridData(resp.data);
         // Apply any existing category filter
@@ -2764,11 +3032,11 @@ const CustomerRedeem = (props) => {
 
   const applyCategoryFilter = (data, category) => {
     let result = [...data];
-    
+
     if (category) {
       result = result.filter(item => item.status === category);
     }
-    
+
     setgriddata(result);
   };
 
@@ -2795,18 +3063,18 @@ const CustomerRedeem = (props) => {
           text: "OK",
           onPress: async () => {
             try {
-              const temparam = { 
-                tran_id, 
-                customer_id, 
-                voucher_id 
+              const temparam = {
+                tran_id,
+                customer_id,
+                voucher_id
               };
-              
+
               const data = await postRequest(
-                "customervisit/insertVoucherRedeem", 
-                temparam, 
+                "customervisit/insertVoucherRedeem",
+                temparam,
                 userToken
               );
-              
+
               if (data?.data?.[0]?.valid) {
                 // Refresh the vouchers list after successful redemption
                 fetchVouchers();
@@ -2816,7 +3084,7 @@ const CustomerRedeem = (props) => {
             } catch (error) {
               console.error('Error redeeming voucher:', error);
               Alert.alert(
-                "Error", 
+                "Error",
                 error.message || "Failed to redeem voucher. Please try again."
               );
             }
@@ -2866,8 +3134,8 @@ const CustomerRedeem = (props) => {
     console.log('Filtered results count:', result.length);
     return result;
   }, [griddata, search]);
- 
-  
+
+
   return (
     <View style={MyStyles.container}>
       {/* <ScrollView
@@ -2879,25 +3147,25 @@ const CustomerRedeem = (props) => {
                 />
               }
             > */}
-       <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+      <View style={{ padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
 
-<View style={{ width: '100%' }}>
+        <View style={{ width: '100%' }}>
           <RNPickerSelect
             onValueChange={handleCategoryChange}
             items={pickerItems}
             value={selectedCategory}
-    placeholder={{ label: 'Select Category', value: null }}
+            placeholder={{ label: 'Select Category', value: null }}
             useNativeAndroidPickerStyle={false}
             style={{
               inputAndroid: {
-        fontSize: 13,
-        paddingHorizontal: 5,
-        paddingVertical: 5,
-        borderWidth: 1,
-        borderColor: 'gray',
-        borderRadius: 4,
-        color: 'black',
-        paddingRight: 15,
+                fontSize: 13,
+                paddingHorizontal: 5,
+                paddingVertical: 5,
+                borderWidth: 1,
+                borderColor: 'gray',
+                borderRadius: 4,
+                color: 'black',
+                paddingRight: 15,
               },
             }}
           />
@@ -2909,10 +3177,10 @@ const CustomerRedeem = (props) => {
 
       </View>
 
-        <FlatList
-          style={{ marginVertical: 10 }}
-          data={filteredData}
-          renderItem={({ item, index }) => (
+      <FlatList
+        style={{ marginVertical: 10 }}
+        data={filteredData}
+        renderItem={({ item, index }) => (
           <Card
             key={item.voucher_id}
             style={{
@@ -2934,18 +3202,18 @@ const CustomerRedeem = (props) => {
                 />
                 :
                 item.status == "Active" ?
-                <BadgeRibbon
-                  text="Active"
-                  color="green"
-                  position="voucherRight"
-                  textStyle={{ top: 20, left: -20 }}
-                />:
-                <BadgeRibbon
-                  text="Redeem"
-                  color="blue"
-                  position="voucherRight"
-                  textStyle={{ top: 20, left: -20 }}
-                />
+                  <BadgeRibbon
+                    text="Active"
+                    color="green"
+                    position="voucherRight"
+                    textStyle={{ top: 20, left: -20 }}
+                  /> :
+                  <BadgeRibbon
+                    text="Redeem"
+                    color="blue"
+                    position="voucherRight"
+                    textStyle={{ top: 20, left: -20 }}
+                  />
             }
 
 
@@ -3025,7 +3293,7 @@ const CustomerRedeem = (props) => {
         keyExtractor={(item, index) => index.toString()}
       />
 
-{/* </ScrollView> */}
+      {/* </ScrollView> */}
     </View>
   );
 }
@@ -3157,7 +3425,7 @@ const CustomerPoints = (props) => {
                 />
               }
             > */}
-            {console.log("filteredData",filteredData)}
+      {console.log("filteredData", filteredData)}
       <FlatList
         style={{ marginVertical: 10 }}
         data={filteredData}
@@ -3252,7 +3520,7 @@ const CustomerPoints = (props) => {
                   </View>
                 </View>
                 <View>
-                  { (
+                  {(
                     <Text style={{ borderWidth: 1, borderColor: '#aaa', paddingHorizontal: 20, paddingVertical: 5, fontSize: 16, fontWeight: 'bold' }}> {item.points}</Text>
                   )}
 
@@ -3314,7 +3582,7 @@ const PointForm = (props) => {
     staff_id: "",
     full_name: user_Name,
     mobile: "",
-    staff_name: "", 
+    staff_name: "",
     branch_id: branchId,
   });
 
@@ -3326,7 +3594,7 @@ const PointForm = (props) => {
       if (resp.status === 200) {
         const customerData = resp.data[0];
         console.log("customerData", customerData)
-        setparam({...param,mobile:customerData.mobile});
+        setparam({ ...param, mobile: customerData.mobile });
       } else {
         Alert.alert(
           "Error!",
@@ -3345,7 +3613,7 @@ const PointForm = (props) => {
         );
       }
     });
-    
+
   }, [customer_id]);
 
 
@@ -3454,20 +3722,20 @@ const PointForm = (props) => {
 }
 
 const ExtraPoints = (props) => {
-  const { customer_id,branchId } = props.route.params;
+  const { customer_id, branchId } = props.route.params;
   const { userToken } = props.route.params;
   const { userName } = props.route.params;
   const [stafflist, setstafflist] = useState([]);
   const [totalPoint, setTotalPoint] = useState(0);
   console.log(props)
   const [param, setparam] = useState({
-    customer_id:customer_id,
+    customer_id: customer_id,
     remark: "",
     extra_point: "",
-    mobile:"",
+    mobile: "",
     staff_name: "",
     full_name: userName,
-    branch_id:branchId,
+    branch_id: branchId,
   });
 
 
@@ -3485,13 +3753,13 @@ const ExtraPoints = (props) => {
         );
       }
     });
- 
+
     let data = { customer_id: customer_id };
     postRequest("customers/customer/profile", data, userToken).then((resp) => {
       if (resp.status === 200) {
         const customerData = resp.data[0];
         console.log("customerData", customerData)
-        setparam({...param,mobile:customerData.mobile});
+        setparam({ ...param, mobile: customerData.mobile });
       } else {
         Alert.alert(
           "Error!",

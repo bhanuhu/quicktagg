@@ -84,6 +84,7 @@ const StockSales = (props) => {
         { branch_id: branchId },
         userToken
       ).then((resp) => {
+        console.log("customerlist",resp)
         if (resp.status == 200) {
           setCustomerList(resp.data);
         } else {
@@ -116,6 +117,8 @@ const StockSales = (props) => {
             { branch_id: branchId },
             userToken
           ).then((items) => {
+        console.log("customerlist",item)
+
             if (items.status == 200) {
               let listData = [];
               listData = items.data;
@@ -245,7 +248,9 @@ const StockSales = (props) => {
                   }}
                 >
                   <Image
-                    source={{ uri: item.url_image + "" + item.image_path }}
+                    source={{  uri: item.image_path?.startsWith("http")
+                            ? item.image_path
+                            : (item.url_image || "") + (item.image_path || ""),}}
                     style={{
                       height: 100,
                       width: 80,

@@ -49,16 +49,40 @@ const StockTransfer = (props) => {
   const [tempProducts, setTempProducts] = useState([]);
   const [branchlist, setbranchlist] = useState([]);
 
+  // Clear data when switching from edit mode to create mode
+  const [previousTranId, setPreviousTranId] = React.useState(null);
+  
   React.useEffect(() => {
+    // Only clear data if we're switching from edit mode (tran_id > 0) to create mode (tran_id = 0)
+    if (tran_id == 0 && previousTranId !== null && previousTranId !== "0") {
+      setSelectedProducts([])
+      setProductList([])
+      setTempProducts([])
+      setProduct(false)
+      setRemarks(false)
+      setparam({
+        tran_id: "0",
+        date: moment(),
+        entry_no: "",
+        to_branch_id: "",
+        remarks: "",
+        stock_transfer_products: [],
+      })
+    }
+    setPreviousTranId(tran_id);
+  }, [tran_id]);
 
+  React.useEffect(() => {
     ProductList();
     postRequest("transactions/stockTransfer/preview", { tran_id: tran_id }, userToken).then((resp) => {
       if (resp.status == 200) {
         BranchList();
         if (tran_id == 0) {
-          param.entry_no = resp.data[0].entry_no;
-          console.log("param",param)
-          setparam({ ...param });
+          // Only set entry_no for new transfers, don't override other cleared data
+          setparam(prev => ({
+            ...prev,
+            entry_no: resp.data[0].entry_no
+          }));
         }
         else {
           //console.log(resp);
@@ -111,6 +135,16 @@ const StockTransfer = (props) => {
     });
 
   };
+
+  let imageURi =(item)=>{
+    if (item.image_path.startsWith('\thttps')){
+      return item.image_path.split('\t')[1];
+    };
+    if(item.image_path.startsWith('https')){
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
   return (
     <ImageBackground
       style={MyStyles.container}
@@ -207,7 +241,7 @@ const StockTransfer = (props) => {
                   }}
                 >
                   <Image
-                    source={{ uri: resp.url_image + "" + resp.image_path }}
+                    source={{uri: imageURi(resp) }}
                     style={{
                       height: 100,
                       width: 90,
@@ -397,8 +431,22 @@ const StockTransfer = (props) => {
                         ).then((resp) => {
                           if (resp.status == 200) {
                             setRemarks(!remarks)
+                            // Clear all data after successful submission
+                            setSelectedProducts([])
+                            setProductList([])
+                            setTempProducts([])
+                            setProduct(false)
+                            setRemarks(false)
+                            setparam({
+                              tran_id: "0",
+                              date: moment(),
+                              entry_no: "",
+                              to_branch_id: "",
+                              remarks: "",
+                              stock_transfer_products: [],
+                            })
                             // if (resp.data[0].valid) {
-                            props.navigation.navigate("StockList");
+                            props.navigation.navigate("StockList", { search: "" });
                             // }
                             setLoading(false);
                           }

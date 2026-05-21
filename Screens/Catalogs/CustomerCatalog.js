@@ -272,8 +272,11 @@ const CustomerCatalog = (props) => {
     ).then((resp) => {
       if (resp.status == 200) {
         if (tran_id == 0) {
-          param.entry_no = resp.data[0].entry_no;
-          setparam({ ...param });
+          // Only set entry_no for new catalogs, don't override other cleared data
+          setparam(prev => ({
+            ...prev,
+            entry_no: resp.data[0].entry_no
+          }));
         } else {
           console.log(resp);
           param.tran_id = resp.data[0].tran_id;
@@ -324,7 +327,32 @@ const CustomerCatalog = (props) => {
       }
     });
     setLoading(false);
-  }, []);
+  }, [tran_id]);
+
+  // Clear data when switching from edit mode to create mode
+  React.useEffect(() => {
+    if (tran_id == 0) {
+      setSelectedProducts([])
+      setCustomerList([])
+      setsubcategorylist([])
+      setProductList([])
+      setProduct(false)
+      setContact(false)
+      setRemarks(false)
+      setparam({
+        tran_id: "0",
+        subcategory_id: "",
+        min_amount: "",
+        max_amount: "",
+        customer_name: "",
+        customer_id: "",
+        title: "",
+        entry_no: "",
+        remarks: "",
+        customer_session_products: [],
+      })
+    }
+  }, [tran_id]);
 
   const ProductList = () => {
     let data = {
@@ -348,6 +376,17 @@ const CustomerCatalog = (props) => {
     });
     setLoading(false);
   };
+
+  let imageURi =(item)=>{
+    if (item.image_path.startsWith('\thttps')){
+      return item.image_path.split('\t')[1];
+    };
+    if(item.image_path.startsWith('https')){
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
+
   return (
     <ImageBackground
       style={MyStyles.container}
@@ -486,7 +525,7 @@ const CustomerCatalog = (props) => {
                       }}
                     >
                       <Card.Cover
-                        source={{ uri: item.url_image + "" + item.image_path }}
+                        source={{  uri: imageURi(item) }}
                         style={{ width: 75, height: 75, borderRadius: 5 }}
                       />
 
@@ -643,6 +682,26 @@ const CustomerCatalog = (props) => {
                           if (resp.status == 200) {
                             setRemarks(!remarks)
                             if (resp.data[0].valid) {
+                              // Clear all data after successful submission
+                              setSelectedProducts([])
+                              setCustomerList([])
+                              setsubcategorylist([])
+                              setProductList([])
+                              setProduct(false)
+                              setContact(false)
+                              setRemarks(false)
+                              setparam({
+                                tran_id: "0",
+                                subcategory_id: "",
+                                min_amount: "",
+                                max_amount: "",
+                                customer_name: "",
+                                customer_id: "",
+                                title: "",
+                                entry_no: "",
+                                remarks: "",
+                                customer_session_products: [],
+                              })
                               props.navigation.navigate("CustomerCatalogList");
                             }
                             setLoading(false);

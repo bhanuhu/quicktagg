@@ -55,6 +55,8 @@ import {
   CustomerReview,
   CustomerReviewList,
 } from '../Screens/Reviews&Feedbacks/CustomerReview';
+import { Retail } from '../Screens/Retail/Retail';
+import RetailList from '../Screens/Retail/RetailList';
 import SMS from '../Screens/SMS';
 import TitleBar from './TitleBar';
 import ReviewTabs from '../Screens/ReviewTabs';
@@ -72,6 +74,9 @@ import StockSalesList from '../Screens/Stock/StockSalesList';
 import Points from '../Screens/Dashboard/Points';
 import Notifications from '../Screens/Dashboard/Notifications';
 import Appointment from '../Screens/Dashboard/Appointment';
+import Sales from '../Screens/Dashboard/Sales';
+import NewSale from '../Screens/Sales/NewSale';
+import CheckoutPage from '../Screens/Sales/CheckoutPage';
 import ProductServiceScreen from '../Screens/Dashboard/ProductServiceScreen';
 import ZoomImageDetailScreen from '../Screens/Dashboard/ZoomImageDetailScreen';
 import { postRequest } from '../Services/RequestServices';
@@ -385,7 +390,11 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Customer Catalog" disableSearch />
+            <TitleBar {...props} title="Customer Catalog" disableSearch 
+            // onBackPress={() => {
+            //     props.navigation.setParams({ triggerBackReset: true });
+            //   }}
+            />
           ),
         }}
       />
@@ -511,6 +520,26 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => <TitleBar {...props} title="Stock Sales List" />,
+        }}
+      />
+      <Drawer.Screen
+        component={Retail}
+        name="Retail"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => (
+            <TitleBar {...props} title="Retail" disableSearch />
+          ),
+        }}
+      />
+      <Drawer.Screen
+        component={RetailList}
+        name="RetailList"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => <TitleBar {...props} title="Retail List" />,
         }}
       />
       {/* --------------------- Settings------------------- */}
@@ -644,6 +673,58 @@ const DrawerComponent = ({ userDetails }) => {
         }}
       />
 
+       <Drawer.Screen
+        component={Sales}
+        name="Sales"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => (
+            <TitleBar {...props} title="Sales" />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        component={NewSale}
+        name="NewSale"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => (
+            <TitleBar 
+              {...props} 
+              title="New Sale" 
+              disableSearch
+              onBackPress={() => {
+                // Set trigger flag to handle back reset
+                props.navigation.setParams({ triggerBackReset: true });
+              }}
+            />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        component={CheckoutPage}
+        name="CheckoutPage"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => (
+            <TitleBar 
+              {...props} 
+              title="Checkout" 
+              disableSearch 
+              onBackPress={() => {
+                // Set trigger flag to handle back reset in CheckoutPage
+                props.navigation.setParams({ triggerCheckoutBackReset: true });
+              }}
+            />
+          ),
+        }}
+      />
+
       <Drawer.Screen
         component={ProductServiceScreen}
         name="ProductServiceScreen"
@@ -752,6 +833,11 @@ const DrawerContent = (props) => {
           label="Stock Sales"
           icon={({ color, size }) => <Icon name="cash-multiple" color={color} size={size} />}
           onPress={() => props.navigation.navigate("StockSalesList", { search: "" })}
+        />
+        <Drawer.Item
+          label="Retail"
+          icon={({ color, size }) => <Icon name="cash-multiple" color={color} size={size} />}
+          onPress={() => props.navigation.navigate("RetailList", { search: "" })}
         />
         <Drawer.Item
           label="Log Out"

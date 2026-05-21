@@ -22,6 +22,16 @@ const SelectMultiple = ({ visible, data = [], onDone, onClose }) => {
   useEffect(() => {
     setListData(data);
   }, [data]);
+   let imageURi =(item)=>{
+    if (item.image_path.startsWith('\thttps')){
+      console.log("here",item.image_path.split('\t')[1])
+      return item.image_path.split('\t')[1];
+    };
+    if(item.image_path.startsWith('https')){
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
   return (
     <Portal>
       <Modal
@@ -114,7 +124,7 @@ const SelectMultiple = ({ visible, data = [], onDone, onClose }) => {
                 ) : null}
                 {item.trial ? <BadgeRibbon text="T" position="right" /> : null}
                 <Image
-                  source={{ uri: item.url_image + "" + item.image_path }}
+                  source={{  uri: imageURi(item) }}
                   style={{ width: 120, height: 100, objectFit: 'contain', zIndex: -50 }}
                 />
 

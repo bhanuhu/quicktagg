@@ -50,7 +50,7 @@ const ExhibitionCatalogList = (props) => {
 
   const Browse = (id) => {
     postRequest(
-      "transactions/customer/exhibitionsession/browse_app",
+      "transactions/customer/exhibitionsession/browse",
       { search: search == undefined ? "" : search },
       userToken
     ).then((resp) => {
@@ -219,6 +219,13 @@ const ExhibitionCatalog = (props) => {
     product_ids: [],
     customers: [],
   });
+  const [payload, setPayload] = useState({
+    shared_url: "",
+    sms: "exhibition session sms",
+    sms_details: [],
+    tran_id: "",
+    type: "exhibition session"
+  })
   const [product, setProduct] = useState(false);
   const [contact, setContact] = useState(false);
   const [remarks, setRemarks] = useState(false);
@@ -276,8 +283,11 @@ const ExhibitionCatalog = (props) => {
 
       if (resp.status == 200) {
         if (tran_id == 0) {
-          param.entry_no = resp.data[0].entry_no;
-          setparam({ ...param });
+          // Only set entry_no for new catalogs, don't override other cleared data
+          setparam(prev => ({
+            ...prev,
+            entry_no: resp.data[0].entry_no
+          }));
         } else {
 
           param.tran_id = resp.data[0].tran_id;
@@ -286,6 +296,8 @@ const ExhibitionCatalog = (props) => {
           param.remarks = resp.data[0].remarks;
           param.subcategory_id = resp.data[0].products[0].subcategory_id;
           param.product_ids = resp.data[0].products;
+          console.log("Edit mode - products data:", resp.data[0].products);
+          payload.tran_id = resp.data[0].tran_id;
           setparam({ ...param });
 
           postRequest(
@@ -316,18 +328,24 @@ const ExhibitionCatalog = (props) => {
           //   data: resp.data[0].products,
           // });
           // setSelectedProducts([...selectedProducts]);
-          let tempData = Object.values(
-            param.product_ids.reduce((acc, item) => {
-              if (!acc[item.category_name])
-                acc[item.category_name] = {
-                  category_name: item.category_name,
-                  data: [],
-                };
-              acc[item.category_name].data.push(item);
-              return acc;
-            }, {})
-          );
-          console.log(tempData);
+          let tempData = [];
+          if (param.product_ids && param.product_ids.length > 0) {
+            console.log("Processing products:", param.product_ids);
+            tempData = Object.values(
+              param.product_ids.reduce((acc, item) => {
+                console.log("Processing item:", item);
+                const categoryName = item.category_name || item.subcategory_name || 'Unknown';
+                if (!acc[categoryName])
+                  acc[categoryName] = {
+                    category_name: categoryName,
+                    data: [],
+                  };
+                acc[categoryName].data.push(item);
+                return acc;
+              }, {})
+            );
+          }
+          console.log("Final tempData:", tempData);
           setSelectedProducts(tempData);
         }
       } else {
@@ -339,7 +357,35 @@ const ExhibitionCatalog = (props) => {
     });
 
     setLoading(false);
-  }, []);
+  }, [tran_id]);
+
+  // Clear data when switching from edit mode to create mode
+  const [isInitialLoad, setIsInitialLoad] = React.useState(true);
+  const [previousTranId, setPreviousTranId] = React.useState(null);
+
+  React.useEffect(() => {
+    // Only clear data if we're switching from edit mode (tran_id > 0) to create mode (tran_id = 0)
+    if (tran_id == 0 && previousTranId !== null && previousTranId !== "0") {
+      setSelectedProducts([])
+      setCustomerList([])
+      setsubcategorylist([])
+      setProductList([])
+      setProduct(false)
+      setContact(false)
+      setRemarks(false)
+      setparam({
+        tran_id: "0",
+        subcategory_id: "",
+        min_amount: "",
+        max_amount: "",
+        title: "",
+        entry_no: "",
+        remarks: "",
+        product_ids: [],
+      })
+    }
+    setPreviousTranId(tran_id);
+  }, [tran_id]);
 
   const ProductList = () => {
     let data = {
@@ -363,6 +409,16 @@ const ExhibitionCatalog = (props) => {
     });
     setLoading(false);
   };
+
+  let imageURi = (item) => {
+    if (item.image_path.startsWith('\thttps')) {
+      return item.image_path.split('\t')[1];
+    };
+    if (item.image_path.startsWith('https')) {
+      return item.image_path
+    }
+    return item.url_image + "" + item.image_path;
+  }
 
   return (
     <ImageBackground
@@ -506,7 +562,9 @@ const ExhibitionCatalog = (props) => {
                       }}
                     >
                       <Card.Cover
-                        source={{ uri: item.url_image + "" + item.image_path }}
+                        source={{
+                          uri: imageURi(item)
+                        }}
                         style={{ width: 75, height: 75, borderRadius: 5 }}
                       />
 
@@ -534,6 +592,10 @@ const ExhibitionCatalog = (props) => {
         visible={product}
         data={productList}
         onDone={(items) => {
+          // Ensure product_ids is initialized
+          if (!param.product_ids) {
+            param.product_ids = [];
+          }
           items.map((item, i) => {
             let checkproduct = param.product_ids.findIndex(e => e.product_id == item.product_id) > -1 ? false : true;
             if (checkproduct) {
@@ -542,17 +604,20 @@ const ExhibitionCatalog = (props) => {
           });
           setparam({ ...param, product_ids: param.product_ids });
 
-          let tempData = Object.values(
-            param.product_ids.reduce((acc, item) => {
-              if (!acc[item.category_name])
-                acc[item.category_name] = {
-                  category_name: item.category_name,
-                  data: [],
-                };
-              acc[item.category_name].data.push(item);
-              return acc;
-            }, {})
-          );
+          let tempData = [];
+          if (param.product_ids && param.product_ids.length > 0) {
+            tempData = Object.values(
+              param.product_ids.reduce((acc, item) => {
+                if (!acc[item.category_name])
+                  acc[item.category_name] = {
+                    category_name: item.category_name,
+                    data: [],
+                  };
+                acc[item.category_name].data.push(item);
+                return acc;
+              }, {})
+            );
+          }
           //console.log(param.product_ids);
           setSelectedProducts(tempData);
         }}
@@ -571,9 +636,17 @@ const ExhibitionCatalog = (props) => {
             );
             setparam({ ...param, customers: [] });
           } else {
-
+            // Ensure customers array is initialized
+            if (!param.customers) {
+              param.customers = [];
+            }
             items.map((item, index) => {
               param.customers.push({
+                customer_id: item.customer_id,
+                mobile: item.mobile,
+                customer_name: item.full_name,
+              });
+              payload.sms_details.push({
                 customer_id: item.customer_id,
                 mobile: item.mobile,
                 customer_name: item.full_name,
@@ -662,7 +735,43 @@ const ExhibitionCatalog = (props) => {
                             userToken
                           ).then((resp) => {
                             if (resp.status == 200) {
+                              let encryptionId = `e?t=${resp.data.encrypt_id}`;
+                              payload.shared_url = encryptionId;
+                              console.log("payload", payload)
+                              postRequest(
+                                "transactions/customer/exhibitionsession/SendSms",
+                                payload,
+                                userToken
+                              ).then((resp) => {
+                                if (resp.status == 200) {
+                                  setPayload({
+                                    shared_url: "",
+                                    sms: "exhibition session sms",
+                                    sms_details: [],
+                                    tran_id: "",
+                                    type: "exhibition session"
+                                  })
+                                };
+                              })
                               setRemarks(!remarks)
+                              // Clear all data after successful submission
+                              setSelectedProducts([])
+                              setCustomerList([])
+                              setsubcategorylist([])
+                              setProductList([])
+                              setProduct(false)
+                              setContact(false)
+                              setRemarks(false)
+                              setparam({
+                                tran_id: "0",
+                                subcategory_id: "",
+                                min_amount: "",
+                                max_amount: "",
+                                title: "",
+                                entry_no: "",
+                                remarks: "",
+                                product_ids: [],
+                              })
                               setLoading(false);
                               props.navigation.navigate("ExhibitionCatalogList");
 
