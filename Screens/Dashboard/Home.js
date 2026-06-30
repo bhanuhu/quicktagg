@@ -759,6 +759,8 @@ const Home = (props) => {
             followCount++;
           } else if (interestValue === "requirement") {
             reqCount++;
+          }else{
+            followCount++;
           }
         }
 

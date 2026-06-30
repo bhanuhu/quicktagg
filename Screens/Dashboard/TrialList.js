@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Alert, FlatList, ScrollView, Image, Pressable, RefreshControl, TouchableWithoutFeedback } from 'react-native';
+import { View, Alert, FlatList, ScrollView, Image, Pressable, RefreshControl, TouchableWithoutFeedback, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { List, Text, TouchableRipple, Portal, Modal, IconButton } from 'react-native-paper';
 import MyStyles from '../../Styles/MyStyles';
 import { postRequest } from '../../Services/RequestServices';
 import DatePicker from '../../Components/DatePicker';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import MedalIcon from 'react-native-vector-icons/FontAwesome6';
 import moment from 'moment';
@@ -14,6 +13,9 @@ import RNPickerSelect from 'react-native-picker-select';
 const Wishlist = (props) => {
   const { userToken, branchId, search } = props.route.params;
   const [loading, setLoading] = useState(false);
+  const INITIAL_LIMIT = 10;
+  const [displayLimit, setDisplayLimit] = useState(INITIAL_LIMIT);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [griddata, setgriddata] = useState([]);
   const [originalGridData, setOriginalGridData] = useState([]);
   const [param, setparam] = useState({
@@ -71,7 +73,7 @@ const Wishlist = (props) => {
     }
 
     setgriddata(result);
-  }, [productCategory, interest]);
+  }, [productCategory, interest, originalGridData]);
 
 
 
@@ -86,7 +88,7 @@ const Wishlist = (props) => {
 
   React.useEffect(() => {
     fetchWishlist();
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -139,7 +141,7 @@ const Wishlist = (props) => {
       case 'requirement':
         return 'red';
       default:
-        return 'red';
+        return MyStyles.primaryColor.backgroundColor;
     }
   };
 
@@ -189,6 +191,30 @@ const Wishlist = (props) => {
       console.log('Filtered results count:', result.length);
       return result;
     }, [griddata, search]);
+
+  const paginatedData = React.useMemo(() => {
+    return filteredData.slice(0, displayLimit);
+  }, [filteredData, displayLimit]);
+
+  const loadMore = () => {
+    console.log('loadMore called | displayLimit:', displayLimit, 'total items:', filteredData.length, 'loadingMore:', loadingMore);
+    if (displayLimit < filteredData.length && !loadingMore) {
+      setLoadingMore(true);
+      setTimeout(() => {
+        setDisplayLimit(prev => prev + INITIAL_LIMIT);
+        setLoadingMore(false);
+      }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    setDisplayLimit(INITIAL_LIMIT);
+  }, [search, productCategory, interest, originalGridData]);
+
+  const isCloseToBottom = ({ layoutMeasurement, contentOffset, contentSize }) => {
+    const paddingToBottom = 50;
+    return layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom;
+  };
 
   let imageURi = (item) => {
     if (item.image_path.startsWith('\thttps')) {
@@ -301,11 +327,21 @@ const Wishlist = (props) => {
 
       </View>
 
-
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }} refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }>
-        {filteredData.map((item, index) => (
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={({ nativeEvent }) => {
+          console.log(`ScrollEvent | yOffset: ${nativeEvent.contentOffset.y}, layoutHeight: ${nativeEvent.layoutMeasurement.height}, contentHeight: ${nativeEvent.contentSize.height}`);
+          if (isCloseToBottom(nativeEvent)) {
+            loadMore();
+          }
+        }}
+        scrollEventThrottle={16}
+      >
+        {paginatedData.map((item, index) => (
           <View key={index} style={{ borderBottomWidth: 0.5, borderBottomColor: "black", padding: 10 }}>
             <View key={index} style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
               <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
@@ -430,6 +466,11 @@ const Wishlist = (props) => {
 
           </View>
         ))}
+        {loadingMore && (
+          <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+            <ActivityIndicator size="small" color={MyStyles.primaryColor.backgroundColor || "#ffba3c"} />
+          </View>
+        )}
       </ScrollView>
 
       {/* Zoomable Image */}
@@ -447,8 +488,8 @@ const Wishlist = (props) => {
             position: 'absolute',
             top: 0,
             left: 0,
-            right: 0,
-            bottom: 0,
+            width: '100%',
+            height: '100%',
             backgroundColor: 'rgba(0,0,0,0.9)',
             justifyContent: 'center',
             alignItems: 'center',
@@ -458,10 +499,11 @@ const Wishlist = (props) => {
           <Image 
             source={{uri:selectedImage}} 
             style={{
-              width: '60%',
-              height: '60%',
+              width: '70%',
+              height: '70%',
               resizeMode: 'contain',
-              transform: [{ scale: isZoomed ? 1.5 : 1 }]
+              transform: [{ scale: isZoomed ? 1.5 : 1 }],
+              alignSelf: 'center'
             }}
           />
         </Pressable>

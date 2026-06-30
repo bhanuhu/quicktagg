@@ -49,6 +49,7 @@ import Share from 'react-native-share';
 import RNFS from 'react-native-fs';
 import RNPickerSelect from 'react-native-picker-select';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { indigo100 } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 const Profile = (props) => {
   const Tab = createMaterialTopTabNavigator();
   const { userToken, customer_id, customer_mobile, missCallUser, branchId } = props.route.params;
@@ -415,6 +416,7 @@ const Wishlist = ({ userToken, customer_id }) => {
     from_date: moment().subtract(7, 'year').format('YYYY-MM-DD'),
     to_date: moment().format('YYYY-MM-DD'),
   });
+  const [category, setCategory] = useState([]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -422,18 +424,44 @@ const Wishlist = ({ userToken, customer_id }) => {
     setRefreshing(true);
     postRequest("masters/dashboard/browse_cart", { from_date: param.from_date, to_date: param.to_date }, userToken).then((resp) => {
       if (resp.status == 200) {
-
         const filteredData = resp.data.filter(
           item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
+        console.log("wishlist dta", filteredData)
+        postRequest("masters/dashboard/productCategorysCountList", {}, userToken).then((resp) => {
+          if (resp.status == 200) {
+            // console.log("aa gyi category", resp.data[0].categorys)
+            const category = (resp.data[0].categorys);
 
-        console.log("filtered", filteredData)
-        setwishlist(filteredData);
 
+            if (filteredData.length > 0 && category.length > 0) {
+              const updatedWishlist = filteredData.map(item => {
+                const matchedCategory = category.find(
+                  cat => String(cat.category_id) === String(item.category_id)
+                );
+
+                return {
+                  ...item,
+                  category_name: matchedCategory?.innerTable[0]?.category_name || null,
+                  category_id: matchedCategory?.category_id || item.category_id,
+                };
+              });
+
+              console.log("updated wishlist", updatedWishlist);
+              setwishlist(updatedWishlist);
+            }
+          } else {
+            Alert.alert(
+              "Error !",
+              "Oops! \nSeems like we run into some Server Error 2"
+            );
+          }
+          setLoading(false);
+        });
       } else {
         Alert.alert(
           "Error !",
-          "Oops! \nSeems like we run into some Server Error 1"
+          "Oops! \nSeems like we run into some Server Error 2"
         );
       }
       setLoading(false);
@@ -452,10 +480,37 @@ const Wishlist = ({ userToken, customer_id }) => {
         const filteredData = resp.data.filter(
           item => item.customer_id === customer_id && item.added_from != 'trial' && item.added_from != 'exhibition' && item.added_from != "Online"
         );
-        // console.log("wishlist dta", filteredData)
+        console.log("wishlist dta", filteredData)
+        postRequest("masters/dashboard/productCategorysCountList", {}, userToken).then((resp) => {
+          if (resp.status == 200) {
+            // console.log("aa gyi category", resp.data[0].categorys)
+            const category = (resp.data);
 
-        setwishlist(filteredData);
 
+            if (filteredData.length > 0 && category.length > 0) {
+              const updatedWishlist = filteredData.map(item => {
+                const matchedCategory = category.find(
+                  cat => String(cat.category_id) === String(item.category_id)
+                );
+
+                return {
+                  ...item,
+                  category_name: matchedCategory?.innerTable[0]?.category_name || null,
+                  category_id: matchedCategory?.category_id || item.category_id,
+                };
+              });
+
+              console.log("updated wishlist", updatedWishlist);
+              setwishlist(updatedWishlist);
+            }
+          } else {
+            Alert.alert(
+              "Error !",
+              "Oops! \nSeems like we run into some Server Error 2"
+            );
+          }
+          setLoading(false);
+        });
       } else {
         Alert.alert(
           "Error !",
@@ -466,7 +521,6 @@ const Wishlist = ({ userToken, customer_id }) => {
     });
 
   }, [customer_id]);
-
 
   // Group wishlist items by date
   const groupedWishlist = wishlist
@@ -498,7 +552,7 @@ const Wishlist = ({ userToken, customer_id }) => {
       case 'requirement':
         return 'red';
       default:
-        return 'red';
+        return MyStyles.primaryColor.backgroundColor;
     }
   };
 
@@ -552,17 +606,17 @@ const Wishlist = ({ userToken, customer_id }) => {
                       })
                     }
                   >
-                    {item?
-                    <Image
-                      source={{ uri: imageURi(item) }}
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        borderTopLeftRadius: 10,
-                        borderTopRightRadius: 10,
-                        zIndex: -1
-                      }}
-                    />:""}
+                    {item ?
+                      <Image
+                        source={{ uri: imageURi(item) }}
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          borderTopLeftRadius: 10,
+                          borderTopRightRadius: 10,
+                          zIndex: -1
+                        }}
+                      /> : ""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -571,9 +625,12 @@ const Wishlist = ({ userToken, customer_id }) => {
                       alignItems: 'center'
                     }}>
                       <Text numberOfLines={1} style={{ color: "#333", fontWeight: 'bold' }}>
-                        {item?.product_name?.length < 13
-                          ? CapitalizeName(item.product_name)
-                          : `${CapitalizeName(item.product_name).substring(0, 10)}...`}
+                        {item?.product_name.length > 0 ?
+                          item?.product_name?.length < 13
+                            ? CapitalizeName(item.product_name)
+                            : `${CapitalizeName(item.product_name).substring(0, 10)}...`
+                          : CapitalizeName(item.category_name)
+                        }
                       </Text>
 
                       <IconDot
@@ -643,6 +700,27 @@ const Uploaded = ({ userToken, customer_id }) => {
 
   }, [customer_id]);
 
+  const getInterestColor = (item) => {
+    const interestValue =
+      (item.updated_interest && item.updated_interest !== 'N/A'
+        ? item.updated_interest
+        : item.interest && item.interest !== 'N/A'
+          ? item.interest
+          : ''
+      ).toLowerCase();
+
+    switch (interestValue) {
+      case 'yes':
+        return 'green';
+      case 'follow up':
+        return MyStyles.primaryColor.backgroundColor
+      case 'requirement':
+        return 'red';
+      default:
+        return 'red';
+    }
+  };
+
 
   // Group Uploaded items by date
   const groupedUploaded = uploaded
@@ -705,17 +783,17 @@ const Uploaded = ({ userToken, customer_id }) => {
                       })
                     }
                   >
-                    {item?
-                    <Image
-                      source={{ uri: imageURi(item) }}
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        borderTopLeftRadius: 10,
-                        borderTopRightRadius: 10,
-                        zIndex: -1
-                      }}
-                    />:""}
+                    {item ?
+                      <Image
+                        source={{ uri: imageURi(item) }}
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          borderTopLeftRadius: 10,
+                          borderTopRightRadius: 10,
+                          zIndex: -1
+                        }}
+                      /> : ""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -734,13 +812,7 @@ const Uploaded = ({ userToken, customer_id }) => {
                         size={10}
                         style={{
                           marginHorizontal: 2,
-                          color: (
-                            item?.updated_interest && item?.updated_interest !== 'N/A'
-                              ? (item?.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
-                              : item?.interest && item?.interest !== 'N/A'
-                                ? (item?.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
-                                : 'red'
-                          ),
+                          color: getInterestColor(item),
                           alignSelf: "center",
                         }}
                       />
@@ -867,25 +939,25 @@ const Sales = ({ userToken, customer_id }) => {
                       backgroundColor: '#fff'
                     }}
                     onPress={() =>
-                      navigation.navigate("ProfileProductsPreview", {
+                      navigation.navigate("ProfileProductsPreviewSales", {
                         product_id: item.product_id,
                         item,
                         entryno: item.entry_no,
                       })
                     }
                   >{
-                    item?
-                  
-                    <Image
-                      source={{ uri: imageURi(item) }}
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        borderTopLeftRadius: 10,
-                        borderTopRightRadius: 10,
-                        zIndex: -1
-                      }}
-                    />:""}
+                      item ?
+
+                        <Image
+                          source={{ uri: imageURi(item) }}
+                          style={{
+                            width: '100%',
+                            height: 120,
+                            borderTopLeftRadius: 10,
+                            borderTopRightRadius: 10,
+                            zIndex: -1
+                          }}
+                        /> : ""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -1070,17 +1142,17 @@ const Exhibition = ({ userToken, customer_id, branchId }) => {
                     }
                   >
                     {/* Image */}
-                    {item?
-                    <Image
-                      // uri: item.url_image + item.image_path 
-                      source={{ uri: imageURi(item) }}
-                      style={{
-                        width: '100%',
-                        height: 120,
-                        borderTopLeftRadius: 10,
-                        borderTopRightRadius: 10,
-                        zIndex: -1
-                      }} />:""}
+                    {item ?
+                      <Image
+                        // uri: item.url_image + item.image_path 
+                        source={{ uri: imageURi(item) }}
+                        style={{
+                          width: '100%',
+                          height: 120,
+                          borderTopLeftRadius: 10,
+                          borderTopRightRadius: 10,
+                          zIndex: -1
+                        }} /> : ""}
                     <View style={{
                       padding: 5,
                       paddingVertical: 10,
@@ -1095,7 +1167,7 @@ const Exhibition = ({ userToken, customer_id, branchId }) => {
                       <IconDot
                         name="brightness-1"
                         size={10}
-                        color={getStatusColor(item.status)}
+                        color={MyStyles.primaryColor.backgroundColor}
                         style={{
                           marginHorizontal: 2,
                           alignSelf: "center",
@@ -2176,15 +2248,18 @@ const ProfileProductsPreview = (props) => {
   }, [item, product_id]);
 
   React.useEffect(() => {
+    console.log("product id ye h", product_id)
     let data = { product_id: product_id };
+    // let data = { product_id: "4390" };
     if (data != 0) {
+      // console.log("salesh", item)
       postRequest("masters/product/preview", data, userToken).then((resp) => {
         // console.log(`remarks -> ${JSON.stringify(resp)}`)
         // console.log(`remarks -> ${data}`)
+        console.log(`remarks -> ${JSON.stringify(resp.data)}`)
+        console.log("items", item)
+        if (resp.status == 200 && resp.data[0].product_code.length > 0) {
 
-        if (resp.status == 200) {
-
-          console.log(`remarks -> ${JSON.stringify(resp.data)}`)
           setparam({
             product_id: resp.data[0].product_id,
             product_code: resp.data[0].product_code,
@@ -2203,23 +2278,42 @@ const ProfileProductsPreview = (props) => {
             material: resp.data[0].material,
             on_demand: resp.data[0].on_demand,
             available: resp.data[0].available,
-            qty: resp.data[0].qty,
+            // qty: item.quantity,
             remarks_list: remarks,
+            subcategory_name: resp.data[0].subcategorylist[0].subcategory_name
 
           })
-
+          console.log("heyy")
           let ImagesList = [];
           ImagesList = resp.data[0].images;
-          setProductImages(ImagesList);
-          // console.log(ImagesList)
+          let images = []
+          if (ImagesList.length > 0) {
+
+            ImagesList.map((resp, index) => {
+              images.push(imageURi(resp))
+            })
+          }
+          console.log("imagesd", images)
+          setProductImages(images);
+          console.log("images list", ImagesList)
           setCurrentProduct(ImagesList.length > 0 ? ImagesList[0] : {});
 
         } else {
+          // postRequest(
+          //       "masters/dashboard/browse_cart",
+          //       { branch_id: branchId, from_date: param.from_date, to_date: param.to_date, search: "" },
+          //       userToken
+          //     ).then((resp) => {
 
-          // Alert.alert(
-          //   "Error !",
-          //   "Oops! \nSeems like we run into some Server Errora"
-          // );
+          //       if (resp.status == 200) {
+
+          //         const filteredData = resp.data.filter(
+          //           item => item.added_from !== "exhibition" && item.added_from !== "trial"
+          //         );
+          //         console.log(`filteredData -> ${JSON.stringify(filteredData)}`)
+          //         setgriddata(filteredData);
+          //         setOriginalGridData(filteredData)
+          //       }})          
         }
       });
     }
@@ -2229,17 +2323,18 @@ const ProfileProductsPreview = (props) => {
     setLoading(false);
   }, [product_id]);
   let imageURi = (item) => {
+    console.log("ye aya ", item)
     if (item?.image_path?.startsWith('\thttps')) {
       return item?.image_path.split('\t')[1];
     };
     if (item?.image_path?.startsWith('https')) {
       return item?.image_path
     }
-    return item?.url_image + "" + item?.image_path;
+    return item?.url + "" + item?.image_path;
   }
 
   return (
-    product_id != 0 ?
+    item.product_code.length > 0 ?
       <ScrollView contentContainerStyle={{ padding: 20, backgroundColor: 'white' }} style={{ backgroundColor: 'white' }}>
         <Loading isloading={loading} />
         <View>
@@ -2249,23 +2344,9 @@ const ProfileProductsPreview = (props) => {
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
                   {CapitalizeName(param?.product_name)}
                 </Text>
-                
-
               )
             }
-            {entryno?
-            <TouchableOpacity 
-              onPress={() => {
-                if (item?.bill_pdf) {
-                  Linking.openURL('https://api.quicktagg.com/bills/' + item.bill_pdf);
-                }
-              }}
-            >
-              <Text style={{ fontWeight: "bold", fontSize: 20, color: '#007AFF' }}>
-                {entryno}
-              </Text>
-            </TouchableOpacity>:""
-}
+
             <MedalIcon
               name="medal"
               size={25}
@@ -2279,29 +2360,50 @@ const ProfileProductsPreview = (props) => {
               style={{ transform: [{ rotate: '180deg' }] }}
             />
           </View>
-
-          <View style={{flexDirection:'row', justifyContent:'space-between', marginTop:4}}>
-            {
-              item?.subcategory_name && (
-                <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                  {CapitalizeName(item?.subcategory_name)}
+          <View style={{marginTop:4}}>
+          {
+              item?.category_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20,  color: 'gray' }}>
+                  {CapitalizeName(item?.category_name)}
                 </Text>
               )
-
             }
-
-            {item?.datetime !== "N/A" && (
-              <View style={{ borderWidth:1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2 }}>
-                <Text style={{ fontSize: 12, color: "#000", textAlign:'right' }}>
-                  {moment(item?.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            {
+              param?.subcategory_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20,  color: 'gray' }}>
+                  {CapitalizeName(param?.subcategory_name)}
                 </Text>
+              )
+            }
+            <View style={{ direction: 'column' }}>
+
+              {item?.datetime !== "N/A" && (
+                <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, alignSelf: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
+                    {moment(item?.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  </Text>
 
                   {"\n"}
                   <Text style={{ fontSize: 12, color: "#000" }}>
-                  {moment(item?.datetime, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
-                </Text>
-              </View>
-            )}
+                    {moment(item?.datetime, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  </Text>
+                </View>
+              )}
+              {item?.appointment_date ? (
+                <View style={{ marginTop: 4, backgroundColor: MyStyles.primaryColor.backgroundColor, borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, alignSelf: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
+                    {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  </Text>
+
+                  {"\n"}
+                  <Text style={{ fontSize: 12, color: "#000" }}>
+                    {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  </Text>
+                </View>
+              ) : ""}
+            </View>
           </View>
 
           {
@@ -2327,8 +2429,6 @@ const ProfileProductsPreview = (props) => {
               </Text>
             )
           }
-
-
 
         </View>
         <View style={{ marginVertical: 10, height: 250 }}>
@@ -2357,7 +2457,7 @@ const ProfileProductsPreview = (props) => {
                     })
                     .catch((error) => {
 
-                      console.error(error, "This is Error and Path is:" + currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path);
+                      // console.error(error, "This is Error and Path is:" + currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path);
                     });
                   setLoading(false);
                 }
@@ -2369,13 +2469,14 @@ const ProfileProductsPreview = (props) => {
           }} style={{ height: '100%' }}>
             {productImages.length > 0 ? (
               productImages.map((resp, index) => {
+                console.log("response ara", resp)
                 return (
                   <View key={index}>
-                    {item?
-                    <Image
-                      source={{ uri: imageURi(resp) }}
-                      style={[{ height: '100%', borderRadius: 5, resizeMode: 'contain' }]}
-                    />:""}
+                    {item ?
+                      <Image
+                        source={{ uri: resp }}
+                        style={[{ height: '100%', borderRadius: 5, resizeMode: 'contain' }]}
+                      /> : ""}
                   </View>
                 );
               })) :
@@ -2386,118 +2487,120 @@ const ProfileProductsPreview = (props) => {
           </Swiper>
         </View>
         <View>
-          {
+          {item?.quantity > 0 ?
+            item?.quantity && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Quantity:</Text>{"   "}{item?.quantity || '-'}
+              </Text>
+            ) : ""
+          }
+
+          {param?.available?.length > 0 ?
             param.available && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
                 <Text style={{ color: 'gray' }}>Availablity:</Text>{"   "}{param?.available || '-'}
               </Text>
-            )
+            ) : ""
           }
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            {
+            {item?.added_from?.length > 0 ?
               item?.added_from && (
                 <Text style={{ fontSize: 15, marginTop: 10 }}>
                   <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item?.added_from) || '-'}
                 </Text>
-              )
+              ) : ""
             }
 
-            {
+            {item?.staff_name?.length > 0 ?
               item?.staff_name && (
                 <Text style={{ fontSize: 15, marginTop: 10 }}>
                   <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item?.staff_name) || '-'}
                 </Text>
-              )
+              ) : ""
             }
           </View>
 
-          {
+          {param?.Metal?.length > 0 ?
             param?.Metal && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
                 <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{param?.Metal || '-'}
               </Text>
-            )
+            ) : ""
           }
 
-          {
+          {param?.material?.length > 0 ?
             param?.material && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
                 <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{param?.material || '-'}
               </Text>
-            )
-          }
-
-
-          {
-            param?.disable && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{param?.disable || '-'}
-              </Text>
-            )
+            ) : ""
           }
 
           {
+            param?.disable?.length > 0 ?
+              param?.disable && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Disable:</Text>{"   "}{param?.disable || '-'}
+                </Text>
+              ) : ""
+          }
+
+          {param?.exhibition.length > 0 ?
             param?.exhibition && (
               <Text style={{ fontSize: 15, marginTop: 10 }}>
                 <Text style={{ color: 'gray' }}>Exhibition:</Text>{"   "}{param?.exhibition || '-'}
               </Text>
-            )
+            ) : ""
           }
 
           {
-            param?.weight && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{param?.weight || '-'}
-              </Text>
-            )
+            param?.weight?.length > 0 ?
+              param?.weight && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{param?.weight || '-'}
+                </Text>
+              ) : ""
           }
           {
-            param?.size_length && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{param?.size_length || '-'}
-              </Text>
-            )
-          }
-
-          {
-            param?.gender && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{param?.gender || '-'}
-              </Text>
-            )
+            param?.size_length?.length > 0 ?
+              param?.size_length && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{param?.size_length || '-'}
+                </Text>
+              ) : ""
           }
 
           {
-            param?.product_code && (
-              <Text style={{ fontSize: 15, marginTop: 10 }}>
-                <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{param?.product_code || '-'}
-              </Text>
-            )
+            param?.gender?.length > 0 ?
+              param?.gender && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{param?.gender || '-'}
+                </Text>
+              ) : ""
+          }
+
+          {
+            param?.product_code?.length > 0 ?
+              param?.product_code && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Description:</Text>{"   "}{param?.product_code || '-'}
+                </Text>
+              ) : ""
           }
 
         </View>
-        <View style={{ marginTop: 50 }}>
-          {remarks.length > 0 && (
+        <View style={{ marginTop: 10 }}>
+          {item.remarks.length > 0 && (
             <>
-              {!active
-                ? (
+
+
                   // Show only the first remark
-                  <Text style={{ color: "black", marginBottom: 5, fontSize: 14 }}>
-                    {CapitalizeName(remarks[0].remarks)}
-                  </Text>
-                )
-                : (
-                  // Show all remarks (from first to last)
-                  remarks.map((item, index) => (
-                    <Text
-                      key={index}
-                      style={{ color: index === 0 ? "black" : "gray", marginBottom: 3 }}
-                    >
-                      {CapitalizeName(item.remarks)}
-                    </Text>
-                  ))
-                )}
+              <Text style={{ color: "black", marginBottom: 5, fontSize: 14 }}>
+                <Text style={{ fontSize: 15, marginTop: 10, color: 'gray' }}>Remarks:{"   "}</Text>
+                {CapitalizeName(item.remarks)}
+              </Text>
+
             </>
           )}
 
@@ -2516,9 +2619,9 @@ const ProfileProductsPreview = (props) => {
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             {
-              item?.product_name && (
+              item?.category_name && (
                 <Text style={{ fontWeight: "bold", fontSize: 20 }}>
-                  {CapitalizeName(item?.product_name)}
+                  {CapitalizeName(item?.category_name)}
                 </Text>
               )
             }
@@ -2543,18 +2646,35 @@ const ProfileProductsPreview = (props) => {
                   {CapitalizeName(item?.subcategory_name)}
                 </Text>
               )
-
             }
 
-            {item?.appointment_date !== "N/A" && item?.appointment_date != null && (
-              <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, marginBottom: 10 }}>
-                <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
-                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+            <View style={{ direction: 'column' }}>
+
+              {item?.datetime !== "N/A" && (
+                <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, alignSelf: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
+                    {moment(item?.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  </Text>
+
                   {"\n"}
-                  {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
-                </Text>
-              </View>
-            )}
+                  <Text style={{ fontSize: 12, color: "#000" }}>
+                    {moment(item?.datetime, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  </Text>
+                </View>
+              )}
+              {item?.appointment_date ? (
+                <View style={{ marginTop: 4, backgroundColor: MyStyles.primaryColor.backgroundColor, borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2, alignSelf: 'flex-end' }}>
+                  <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
+                    {moment(item?.appointment_date, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                  </Text>
+
+                  {"\n"}
+                  <Text style={{ fontSize: 12, color: "#000" }}>
+                    {moment(item?.appointment_date, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                  </Text>
+                </View>
+              ) : ""}
+            </View>
           </View>
 
           {
@@ -2583,8 +2703,6 @@ const ProfileProductsPreview = (props) => {
             )
           }
 
-
-
         </View>
         <View style={{ marginVertical: 10, height: 200 }}>
           <IconButton
@@ -2599,7 +2717,7 @@ const ProfileProductsPreview = (props) => {
             onPress={async () => {
               try {
                 if (!item?.url_image || !item?.image_path) {
-                  throw new Error('Image URL or path is missing');
+                  // throw new Error('Image URL or path is missing');
                 }
 
                 setLoading(true);
@@ -2644,11 +2762,11 @@ const ProfileProductsPreview = (props) => {
             }}
           />
           <View>
-            {item?
-            <Image
-              source={{ uri: item?.url_image + "" + item?.image_path }}
-              style={[{ height: "100%", width: "100%", borderRadius: 5, resizeMode: 'contain' }]}
-            />:""}
+            {item ?
+              <Image
+                source={{ uri: item?.url_image + "" + item?.image_path }}
+                style={[{ height: "100%", width: "100%", borderRadius: 5, resizeMode: 'contain' }]}
+              /> : ""}
           </View>
         </View>
         <View>
@@ -2660,7 +2778,7 @@ const ProfileProductsPreview = (props) => {
             )
           }
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 50 }}>
+          <View style={{ marginTop: 50 }}>
             {
               item?.added_from && (
                 <Text style={{ fontSize: 15, marginTop: 10, fontWeight: 'bold' }}>
@@ -2693,9 +2811,6 @@ const ProfileProductsPreview = (props) => {
               </Text>
             )
           }
-
-
-
 
           {
             item?.disable && (
@@ -2746,33 +2861,18 @@ const ProfileProductsPreview = (props) => {
             )
           }
 
-
-
-
-
-
         </View>
-        <View style={{ marginTop: 50 }}>
-          {remarks.length > 0 && (
+        <View style={{ marginTop: 10 }}>
+          {item.remarks.length > 0 && (
             <>
-              {!active
-                ? (
+
+
                   // Show only the first remark
-                  <Text style={{ color: "black", marginBottom: 5, fontSize: 14 }}>
-                    {CapitalizeName(remarks[0].remarks)}
-                  </Text>
-                )
-                : (
-                  // Show all remarks (from first to last)
-                  remarks.map((item, index) => (
-                    <Text
-                      key={index}
-                      style={{ color: index === 0 ? "black" : "gray", marginBottom: 3 }}
-                    >
-                      {CapitalizeName(item.remarks)}
-                    </Text>
-                  ))
-                )}
+              <Text style={{ color: "black", marginBottom: 5, fontSize: 14 }}>
+                <Text style={{ fontSize: 15, marginTop: 10, color: 'gray' }}>Remarks:{"   "}</Text>
+                {CapitalizeName(item.remarks)}
+              </Text>
+
             </>
           )}
 
@@ -2785,207 +2885,8 @@ const ProfileProductsPreview = (props) => {
             </Text>
           )}
         </View>
-
-
-
-
-
-
       </ScrollView >
   )
-
-  // return (
-  //   <View style={MyStyles.container}>
-  //     <Loading isloading={loading} />
-  //     <ScrollView>
-  //       <View style={[MyStyles.wrapper, { paddingHorizontal: 5 }]}>
-  //         <Text style={{ fontWeight: "bold", fontSize: 22 }}>
-  //           {param.product_name}
-  //         </Text>
-  //         <Text style={{ fontSize: 18, marginVertical: 10 }}>
-  //           SKU: {param.product_code}
-  //         </Text>
-  //         <View style={{ flexDirection: "row", alignItems: "center" }}>
-  //           <Text style={{ fontSize: 18 }}>
-  //             Price: <Text style={{ fontWeight: "bold" }}>{param.price}</Text>{" "}
-  //             {"      "}
-  //             <Text
-  //               style={{
-  //                 fontSize: 14,
-  //                 color: "red",
-  //                 textDecorationLine: "line-through",
-  //               }}
-  //             >
-  //               {param.price}
-  //             </Text>
-  //           </Text>
-  //           {/* <IconButton
-  //             icon="share-variant"
-  //             size={25}
-  //             color="#FFF"
-  //             style={{
-  //               marginHorizontal: 0,
-  //               backgroundColor: "#2874A6",
-  //               textAlign: "right",
-  //               marginLeft: "auto",
-  //             }}
-  //             onPress={() => {              
-  //               });
-  //             }}
-  //           /> */}
-  //         </View>
-  //       </View>
-
-  //       <View style={{ height: 300 }}>
-  //         <Swiper key={productImages.length} loop={false} activeDotColor="#ffba3c">
-  //           {productImages.length > 0 ? (
-  //             productImages.map((resp, index) => {
-  //               return (
-  //                 <>
-  //                   <IconButton
-  //                     icon="share-variant"
-  //                     size={25}
-  //                     color="#FFF"
-  //                     style={{
-  //                       marginHorizontal: 0,
-  //                       backgroundColor: "#2874A6",
-  //                       textAlign: "right",
-  //                       marginLeft: "auto",
-  //                       marginRight: 15,
-  //                     }}
-  //                     onPress={() => {
-  //                       Sharing.isAvailableAsync().then((result) => {
-  //                         if (result) {
-  //                           setLoading(true);
-  //                           const options = {
-  //                             dialogTitle: param.product_name.toString(),
-  //                             mimeType: "image/jpeg"
-  //                           };
-  //                           FileSystem.downloadAsync(resp.url + "" + resp.image_path, FileSystem.cacheDirectory + resp.image_path)
-  //                             .then(async ({ uri }) => {
-  //                               Sharing.shareAsync(uri, options);
-  //                             })
-  //                             .catch((error) => {
-  //                               console.error(error);
-  //                             });
-  //                           setLoading(false);
-  //                         }
-  //                       });
-  //                     }}
-  //                   />
-  //                   <Image
-  //                     source={{ uri: resp.url + "" + resp.image_path }}
-  //                     style={[{ height: 250, width: "100%" }]}
-  //                   />
-  //                 </>
-  //               );
-  //             })
-  //           ) : (
-  //             <Image
-  //               source={require("../assets/upload.png")}
-  //               style={[{ height: 250, width: "100%" }]}
-  //             />
-  //           )}
-
-  //         </Swiper>
-  //       </View>
-  //       <View style={[MyStyles.wrapper, { paddingHorizontal: 10 }]}>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Availablity :
-  //           </Text>
-  //           <Text>{param.available}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Metal :
-  //           </Text>
-  //           <Text>{param.Metal}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Material :
-  //           </Text>
-  //           <Text>{param.material}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Disable :
-  //           </Text>
-  //           <Text>{param.disable}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Exhibition :
-  //           </Text>
-  //           <Text>{param.exhibition}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Weight :
-  //           </Text>
-  //           <Text>{param.weight}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Size/Length :
-  //           </Text>
-  //           <Text>{param.size_length}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Gender :
-  //           </Text>
-  //           <Text>{param.gender}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text style={{ fontWeight: "bold", fontSize: 14, width: 150 }}>
-  //             Description :
-  //           </Text>
-  //           <Text>{param.product_code}</Text>
-  //         </View>
-  //         <View style={[MyStyles.row, { justifyContent: "flex-start" }]}>
-  //           <Text>
-  //             {param.remarks_list.length > 0
-  //               && param.remarks_list.map((item, i) => {
-  //                 if (i == param.remarks_list.length - 1) {
-  //                   return (
-  //                     <Text style={{ color: "#333" }}>{item.remarks}</Text>
-  //                   );
-  //                 }
-  //               })}
-  //           </Text>
-  //         </View>
-  //         <View >
-
-  //           {(activeIndex == 1 && active && param.remarks_list.length > 0)
-  //             && param.remarks_list.map((item, i) => {
-  //               if (i != param.remarks_list.length - 1) {
-  //                 return (
-  //                   <Text style={{ color: "#888" }}>{item.remarks}</Text>
-  //                 );
-  //               }
-  //             })}
-
-  //           {activeIndex == 1 && active ?
-  //             <TouchableOpacity onPress={() => {
-  //               setActiveIndex(1);
-  //               setActive(false);
-  //             }}><Text style={{ color: "#888" }} >Less All Remarks</Text>
-  //             </TouchableOpacity>
-  //             :
-  //             <TouchableOpacity onPress={() => {
-  //               setActiveIndex(1);
-  //               setActive(true);
-  //             }}>
-  //               <Text style={{ color: "#888" }} >Show All Remarks</Text>
-  //             </TouchableOpacity>
-  //           }
-  //         </View>
-  //       </View>
-  //     </ScrollView>
-  //   </View>
-  // );
 };
 
 const CustomerRedeem = (props) => {
@@ -3865,4 +3766,518 @@ const ExtraPoints = (props) => {
     </ImageBackground>
   )
 }
-export { Profile, CustomerVoucherList, ProfileProductsPreview, PointForm, ExtraPoints, CustomerPoints };
+
+const ProfileProductsPreviewSales = (props) => {
+  const { userToken, product_id, item, entryno } = props.route.params;
+  const [loading, setLoading] = useState(true);
+  const [param, setparam] = useState({
+    product_id: "",
+    product_code: "",
+    product_name: "",
+    remarks: "",
+    price: "",
+    disable: "",
+    exhibition: "",
+    businesses: "",
+    trial: "",
+    discounted_price: "",
+    weight: "",
+    size_length: "",
+    gender: "",
+    Metal: "",
+    material: "",
+    on_demand: "",
+    available: "",
+    qty: "",
+    remarks_list: [],
+  });
+  const [productImages, setProductImages] = useState([]);
+  const [remarks, setRemarks] = useState([]);
+  const [active, setActive] = useState(false);
+  const [activeIndex, setActiveIndex] = useState("");
+  const [currentProduct, setCurrentProduct] = useState({});
+
+  const [sortedList, setSortedList] = useState({});
+
+  // console.log(remarks)
+
+
+  useEffect(() => {
+    setLoading(true);
+
+    postRequest("transactions/customer/cart/remarks", {
+      tran_id: item.tran_id,
+      from: item.type
+    }, userToken)
+      .then((resp) => {
+        // console.log("Full API Response:", JSON.stringify(resp.data, null, 2));
+
+        if (resp.status === 200 && Array.isArray(resp.data)) {
+          setRemarks(resp.data); // Because resp.data *is* the array
+        } else {
+          console.warn("Unexpected response structure:", resp.data);
+          setRemarks([]);
+        }
+      })
+      .catch((error) => {
+        console.error("API Error:", error);
+        Alert.alert("Error!", "Something went wrong. Please try again.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [item, product_id]);
+
+  React.useEffect(() => {
+    let data = { product_id: product_id };
+    if (data != 0) {
+      console.log("salesh", item)
+      postRequest("masters/product/preview", data, userToken).then((resp) => {
+        // console.log(`remarks -> ${JSON.stringify(resp)}`)
+        // console.log(`remarks -> ${data}`)
+        console.log("sales item", item)
+        if (resp.status == 200) {
+
+          console.log(`remarks -> ${JSON.stringify(resp.data)}`)
+          setparam({
+            product_id: resp.data[0].product_id,
+            product_code: resp.data[0].product_code,
+            product_name: resp.data[0].product_name,
+            remarks: resp.data[0].remarks,
+            price: resp.data[0].price,
+            disable: resp.data[0].disable,
+            exhibition: resp.data[0].exhibition,
+            businesses: resp.data[0].businesses,
+            trial: resp.data[0].trial,
+            discounted_price: resp.data[0].discounted_price,
+            weight: resp.data[0].weight,
+            size_length: resp.data[0].size_length,
+            gender: resp.data[0].gender,
+            Metal: resp.data[0].Metal,
+            material: resp.data[0].material,
+            on_demand: resp.data[0].on_demand,
+            available: resp.data[0].available,
+            qty: item.quantity,
+            remarks_list: remarks,
+
+          })
+          console.log("heyy")
+          let ImagesList = [];
+          ImagesList = resp.data[0].images;
+          let images = []
+          if (ImagesList.length > 0) {
+
+            ImagesList.map((resp, index) => {
+              images.push(imageURi(resp))
+            })
+          }
+          console.log("imagesd", images)
+          setProductImages(images);
+          console.log("images list", ImagesList)
+          setCurrentProduct(ImagesList.length > 0 ? ImagesList[0] : {});
+
+        } else {
+
+          // Alert.alert(
+          //   "Error !",
+          //   "Oops! \nSeems like we run into some Server Errora"
+          // );
+        }
+      });
+    }
+
+    setSortedList([...item.remarks || []].reverse());
+
+    setLoading(false);
+  }, [product_id]);
+  let imageURi = (item) => {
+    console.log("ye aya ", item)
+    if (item?.image_path?.startsWith('\thttps')) {
+      return item?.image_path.split('\t')[1];
+    };
+    if (item?.image_path?.startsWith('https')) {
+      return item?.image_path
+    }
+    return item?.url + "" + item?.image_path;
+  }
+
+  return (
+    product_id != 0 ?
+      <ScrollView contentContainerStyle={{ padding: 20, backgroundColor: 'white' }} style={{ backgroundColor: 'white' }}>
+        <Loading isloading={loading} />
+        <View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {
+              item?.product_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20 }}>
+                  {CapitalizeName(item?.product_name)}
+                </Text>
+
+
+              )
+            }
+            {entryno ?
+              <TouchableOpacity
+                onPress={() => {
+                  if (item?.bill_pdf) {
+                    Linking.openURL('https://api.quicktagg.com/bills/' + item.bill_pdf);
+                  }
+                }}
+              >
+                <Text style={{ fontWeight: "bold", fontSize: 20, color: '#007AFF' }}>
+                  {entryno}
+                </Text>
+              </TouchableOpacity> : ""
+            }
+            <MedalIcon
+              name="medal"
+              size={25}
+              color={
+                'green'}
+              style={{ transform: [{ rotate: '180deg' }] }}
+            />
+          </View>
+          {
+              item?.category_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20 }}>
+                  {CapitalizeName(item?.category_name)}
+                </Text>
+              )
+
+            }
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
+            {
+              item?.subcategory_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20 }}>
+                  {CapitalizeName(item?.subcategory_name)}
+                </Text>
+              )
+
+            }
+
+            {item?.datetime !== "N/A" && (
+              <View style={{ borderWidth: 1, padding: 3, borderColor: '#aaa', color: 'black', borderRadius: 2 }}>
+                <Text style={{ fontSize: 12, color: "#000", textAlign: 'right' }}>
+                  {moment(item?.datetime, "YYYY-MM-DD HH:mm").format("HH:mm")}
+                </Text>
+
+                {"\n"}
+                <Text style={{ fontSize: 12, color: "#000" }}>
+                  {moment(item?.datetime, "YYYY-MM-DD HH:mm:ss").format("DD/MM/YYYY")}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {
+            item?.product_code && (
+              <Text style={{ fontSize: 15, marginTop: 5 }}>
+                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{item?.product_code}
+              </Text>
+            )
+          }
+
+          {
+            item?.price && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{item?.price}/-{"  "}
+                <Text
+                  style={{
+                    color: "red",
+                    textDecorationLine: "line-through",
+                  }}
+                >
+                  {item?.price}/-
+                </Text>
+              </Text>
+            )
+          }
+
+
+
+        </View>
+        <View style={{ marginVertical: 10, height: 250 }}>
+          <IconButton
+            icon="share-variant"
+            size={20}
+            color="#FFF"
+            style={{
+              margin: 5,
+              backgroundColor: MyStyles.primaryColor.backgroundColor,
+              alignSelf: 'flex-end'
+            }}
+            onPress={() => {
+              Sharing.isAvailableAsync().then((result) => {
+                // console.log(result, "jsadhfjhsdfhjsdfhjs")
+                if (result) {
+                  setLoading(true);
+                  const options = {
+                    dialogTitle: item?.product_name.toString(),
+                    mimeType: "image/jpeg"
+                  };
+                  FileSystem.downloadAsync(currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path)
+                    .then(async ({ uri }) => {
+                      // console.log(uri, "Pathof Image")
+                      Sharing.shareAsync(uri, options);
+                    })
+                    .catch((error) => {
+
+                      // console.error(error, "This is Error and Path is:" + currentProduct?.url + "" + currentProduct?.image_path, FileSystem.cacheDirectory + currentProduct?.image_path);
+                    });
+                  setLoading(false);
+                }
+              });
+            }}
+          />
+          <Swiper key={productImages.length} loop={false} activeDotColor="gray" onIndexChanged={(index) => {
+            setCurrentProduct(productImages[index]);
+          }} style={{ height: '100%' }}>
+            {productImages.length > 0 ? (
+              productImages.map((resp, index) => {
+                console.log("response ara", resp)
+                return (
+                  <View key={index}>
+                    {item ?
+                      <Image
+                        source={{ uri: resp }}
+                        style={[{ height: '100%', borderRadius: 5, resizeMode: 'contain' }]}
+                      /> : ""}
+                  </View>
+                );
+              })) :
+              (<Image
+                source={require("../assets/upload.png")}
+                style={[{ height: '100%', borderRadius: 5, objectFit: 'contain' }]}
+              />)}
+          </Swiper>
+        </View>
+        <View>
+          {item?.quantity > 0 ?
+            item?.quantity && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Quantity:</Text>{"   "}{item?.quantity || '-'}
+              </Text>
+            ) : ""
+          }
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {item?.added_from?.length > 0 ?
+              item?.added_from && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Type:</Text>{"   "}{CapitalizeName(item?.added_from) || '-'}
+                </Text>
+              ) : ""
+            }
+
+            {item?.staff_name?.length > 0 ?
+              item?.staff_name && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{CapitalizeName(item?.staff_name) || '-'}
+                </Text>
+              ) : ""
+            }
+          </View>
+
+          {item?.Metal?.length > 0 ?
+            item?.Metal && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Metal:</Text>{"   "}{item?.Metal || '-'}
+              </Text>
+            ) : ""
+          }
+
+          {item?.material?.length > 0 ?
+            item?.material && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Material:</Text>{"   "}{item?.material || '-'}
+              </Text>
+            ) : ""
+          }
+
+          {
+            item?.weight?.length > 0 ?
+              item?.weight && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Weight:</Text>{"   "}{item?.weight || '-'}
+                </Text>
+              ) : ""
+          }
+
+          {
+            item?.size_length?.length > 0 ?
+              item?.size_length && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Size/Length:</Text>{"   "}{item?.size_length || '-'}
+                </Text>
+              ) : ""
+          }
+
+          {
+            item?.gender?.length > 0 ?
+              item?.gender && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Gender:</Text>{"   "}{item?.gender || '-'}
+                </Text>
+              ) : ""
+          }
+
+          {
+            item?.staff_name?.length > 0 ?
+              item?.staff_name && (
+                <Text style={{ fontSize: 15, marginTop: 10 }}>
+                  <Text style={{ color: 'gray' }}>Staff Name:</Text>{"   "}{item?.staff_name || '-'}
+                </Text>
+              ) : ""
+          }
+
+        </View>
+        <View style={{ marginTop: 10 }}>
+          {item.remarks.length > 0 && (
+            <>
+
+
+                  // Show only the first remark
+              <Text style={{ color: "black", marginBottom: 5, fontSize: 14 }}>
+                <Text style={{ fontSize: 15, marginTop: 10, color: 'gray' }}>Remarks:{"   "}</Text>
+                {CapitalizeName(item.remarks)}
+              </Text>
+
+            </>
+          )}
+
+          {remarks?.length > 1 && (
+            <Text
+              style={{ color: "black", fontSize: 12, marginTop: 5 }}
+              onPress={() => setActive(prev => !prev)}
+            >
+              {active ? "Hide Remarks" : "Show All Remarks"}
+            </Text>
+          )}
+        </View>
+      </ScrollView>
+      : <ScrollView contentContainerStyle={{ padding: 20, backgroundColor: 'white' }} style={{ backgroundColor: 'white' }}>
+        <Loading isloading={loading} />
+        <View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+            {
+              item?.product_name && (
+                <Text style={{ fontWeight: "bold", fontSize: 20 }}>
+                  {CapitalizeName(item?.product_name)}
+                </Text>
+              )
+            }
+            <MedalIcon
+              name="medal"
+              size={25}
+              color={
+                item?.updated_interest && item.updated_interest !== 'N/A'
+                  ? (item.updated_interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                  : item?.interest && item.interest !== 'N/A'
+                    ? (item.interest.toLowerCase() === 'yes' ? 'green' : MyStyles.primaryColor.backgroundColor)
+                    : 'red'
+              }
+              style={{ transform: [{ rotate: '180deg' }] }}
+            />
+          </View>
+
+
+          {
+            item?.product_code && (
+
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>SKU:</Text>{"   "}{item?.product_code}
+              </Text>
+
+            )
+          }
+
+          {
+            item?.price && (
+              <Text style={{ fontSize: 15, marginTop: 10 }}>
+                <Text style={{ color: 'gray' }}>Price:</Text>{"   "}{item?.price}/-{"  "}
+                <Text
+                  style={{
+                    color: "red",
+                    textDecorationLine: "line-through",
+                  }}
+                >
+                  {item?.price}/-
+                </Text>
+              </Text>
+            )
+          }
+
+
+
+        </View>
+        <View style={{ marginVertical: 10, height: 200 }}>
+          <IconButton
+            icon="share-variant"
+            size={20}
+            color="#FFF"
+            style={{
+              margin: 5,
+              backgroundColor: MyStyles.primaryColor.backgroundColor,
+              alignSelf: 'flex-end'
+            }}
+            onPress={async () => {
+              try {
+                if (!item?.url_image || !item?.image_path) {
+                  throw new Error('Image URL or path is missing');
+                }
+
+                setLoading(true);
+
+                // Construct the full image URL
+                const imageUrl = `${item?.url_image.replace(/\/+$/, '')}/${item?.image_path.replace(/^\/+/, '')}`;
+
+                // Create a temporary file path with a unique name
+                const fileName = `share_${Date.now()}.jpg`;
+                const fileUri = `${RNFS.CachesDirectoryPath}/${fileName}`;
+
+                // Download the image
+                const response = await RNFS.downloadFile({
+                  fromUrl: imageUrl,
+                  toFile: fileUri,
+                }).promise;
+
+                // Share the image
+                await Share.open({
+                  url: `file://${fileUri}`,
+                  type: 'image/jpeg',
+                  title: item.product_name || 'Share Image',
+                  failOnCancel: false,
+                });
+
+                // Clean up the temporary file after a delay
+                setTimeout(() => {
+                  RNFS.unlink(fileUri).catch(console.warn);
+                }, 10000);
+
+              } catch (error) {
+                if (error.message !== 'User did not share') {
+                  console.error('Sharing failed:', error);
+                  Alert.alert(
+                    'Error Sharing',
+                    'Could not share the image. Please try again.'
+                  );
+                }
+              } finally {
+                setLoading(false);
+              }
+            }}
+          />
+          <View>
+            {item ?
+              <Image
+                source={{ uri: item?.url_image + "" + item?.image_path }}
+                style={[{ height: "100%", width: "100%", borderRadius: 5, resizeMode: 'contain' }]}
+              /> : ""}
+          </View>
+        </View>
+
+      </ScrollView >
+  )
+};
+export { Profile, CustomerVoucherList, ProfileProductsPreview, PointForm, ExtraPoints, CustomerPoints, ProfileProductsPreviewSales };

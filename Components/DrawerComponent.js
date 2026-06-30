@@ -15,7 +15,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Dashboard from '../Screens/Dashboard';
 import { CustomerForm, CustomerList } from '../Screens/Customer';
 import { VoucherList, VoucherForm } from '../Screens/Voucher';
-import { CustomerVoucherList, ExtraPoints, PointForm, Profile, ProfileProductsPreview } from '../Screens/Profile';
+import { CustomerVoucherList, ExtraPoints, PointForm, Profile, ProfileProductsPreview, ProfileProductsPreviewSales } from '../Screens/Profile';
 import {
   ProductsForm,
   ProductsPreview,
@@ -250,6 +250,16 @@ const DrawerComponent = ({ userDetails }) => {
           header: (props) => <TitleBar {...props} title="Product Details" disableSearch />,
         }}
       />
+
+      <Drawer.Screen
+        component={ProfileProductsPreviewSales}
+        name="ProfileProductsPreviewSales"
+        initialParams={userDetails}
+        options={{
+          headerShown: true,
+          header: (props) => <TitleBar {...props} title="Product Details" disableSearch />,
+        }}
+      />
       {/* --------------------- Products------------------- */}
       <Drawer.Screen
         component={ProductTabs}
@@ -278,7 +288,10 @@ const DrawerComponent = ({ userDetails }) => {
         options={{
           headerShown: true,
           header: (props) => (
-            <TitleBar {...props} title="Product Details" disableSearch />
+            <TitleBar {...props} title="Product Details" disableSearch onBackPress={() => {
+                // Set trigger flag to handle back reset
+                props.navigation.setParams({ triggerBackReset: true });
+              }} />
           ),
         }}
       />

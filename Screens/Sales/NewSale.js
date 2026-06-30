@@ -2011,7 +2011,7 @@ const styles = StyleSheet.create({
         borderColor: '#ddd',
         borderRadius: 6,
         textAlign: 'center',
-        fontSize: 14,
+        fontSize: 10,
         backgroundColor: '#fff',
     },
     variantPrice: {
